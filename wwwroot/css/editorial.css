@@ -4378,137 +4378,612 @@ body.portal-layout {
     }
   }
 
-  .fashion-magazine-page {
+  .store-page.fashion-magazine-page {
     min-height: 100vh;
+    margin-bottom: 0;
+    color: #fffaf3;
+    background: #332725;
+    background-image: none;
   }
+
   .fashion-magazine {
-    width: min(1240px, calc(100% - 48px));
+    width: min(1600px, calc(100% - 48px));
     margin: 0 auto;
-    padding: clamp(42px, 7vw, 88px) 0 64px;
+    padding: clamp(32px, 5vw, 68px) 0 56px;
   }
-  .magazine-heading {
-    max-width: 720px;
-    margin: 0 0 38px;
+
+  .magazine-trend-banner {
+    position: relative;
+    display: grid;
+    min-height: 380px;
+    grid-template-columns: minmax(0, 1.55fr) minmax(220px, .65fr);
+    align-items: center;
+    overflow: hidden;
+    padding: clamp(32px, 6vw, 76px);
+    color: #fffaf3;
+    background: #332725;
+    isolation: isolate;
   }
-  .magazine-heading h1 {
-    margin: 12px 0;
-    color: var(--studio-ink);
-    font-size: clamp(38px, 6vw, 68px);
-    line-height: 1.05;
+
+  .magazine-trend-banner::before,
+  .magazine-trend-banner::after {
+    position: absolute;
+    z-index: -1;
+    border: 1px solid rgb(255 250 243 / 12%);
+    border-radius: 50%;
+    content: "";
   }
-  .magazine-heading h1 em {
-    color: var(--studio-wine);
-    font-style: normal;
+
+  .magazine-trend-banner::before {
+    top: -210px;
+    right: -120px;
+    width: 620px;
+    height: 620px;
   }
-  .magazine-heading > p {
-    color: #514842;
+
+  .magazine-trend-banner::after {
+    top: -150px;
+    right: -60px;
+    width: 500px;
+    height: 500px;
+  }
+
+  .magazine-trend-copy {
+    position: relative;
+    z-index: 1;
+    max-width: 100%;
+  }
+
+  .magazine-trend-kicker,
+  .magazine-trend-list .section-kicker {
+    color: #e1bd91;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .18em;
+  }
+
+  .magazine-trend-copy h1 {
+    margin: 20px 0 16px;
+    color: #fffaf3;
+    font-size: clamp(42px, 6vw, 76px);
+    font-weight: 400;
+    letter-spacing: -.045em;
+    line-height: .98;
+  }
+
+  .magazine-trend-copy h1 em {
+    color: #e1bd91;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 400;
+  }
+
+  .magazine-trend-copy p {
+    max-width: 620px;
+    margin: 0;
+    color: rgb(255 250 243 / 76%);
+    font-size: 16px;
+    line-height: 1.75;
+  }
+
+  .magazine-trend-copy > a {
+    display: inline-flex;
+    align-items: center;
+    gap: 22px;
+    margin-top: 30px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid #e1bd91;
+    color: #fffaf3;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .magazine-trend-copy > a:hover {
+    color: #e1bd91;
+  }
+
+  .magazine-trend-art {
+    position: relative;
+    display: grid;
+    min-height: 265px;
+    place-items: center;
+    color: #e1bd91;
+  }
+
+  .magazine-trend-art::before,
+  .magazine-trend-art::after {
+    position: absolute;
+    width: min(25vw, 270px);
+    aspect-ratio: 1;
+    border: 1px solid rgb(225 189 145 / 34%);
+    border-radius: 50%;
+    content: "";
+  }
+
+  .magazine-trend-art::after {
+    width: min(19vw, 205px);
+    border-color: rgb(225 189 145 / 58%);
+  }
+
+  .magazine-trend-art span {
+    position: absolute;
+    top: 4%;
+    right: 12%;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(44px, 6vw, 72px);
+    font-style: italic;
+  }
+
+  .magazine-trend-art i {
+    position: absolute;
+    width: min(11vw, 122px);
+    aspect-ratio: .68;
+    transform: rotate(28deg);
+    border-radius: 48% 48% 8% 8%;
+    background: linear-gradient(145deg, #c89767, #704a42 72%);
+    box-shadow: 18px 22px 40px rgb(0 0 0 / 24%);
+  }
+
+  .magazine-trend-art b {
+    position: absolute;
+    right: 4%;
+    bottom: 5%;
+    color: #fffaf3;
+    font-size: 10px;
+    letter-spacing: .2em;
+    line-height: 1.7;
+  }
+
+  .magazine-trend-list {
+    display: grid;
+    grid-template-columns: minmax(210px, .78fr) minmax(0, 2.22fr);
+    gap: clamp(28px, 5vw, 68px);
+    align-items: start;
+    padding: clamp(38px, 6vw, 76px) 0;
+    border-bottom: 1px solid rgb(255 250 243 / 18%);
+  }
+
+  .magazine-trend-list-heading h2,
+  .magazine-heading h2 {
+    margin: 12px 0 10px;
+    color: #fffaf3;
+    font-size: clamp(30px, 4vw, 46px);
+    font-weight: 400;
+    letter-spacing: -.04em;
+    line-height: 1.08;
+  }
+
+  .magazine-trend-list-heading h2 em,
+  .magazine-heading h2 em {
+    color: #e1bd91;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 400;
+  }
+
+  .magazine-trend-list-heading > p {
+    max-width: 330px;
+    margin: 0;
+    color: rgb(255 250 243 / 72%);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .magazine-trend-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 32px;
+  }
+
+  .magazine-trend-item {
+    position: relative;
+    min-width: 0;
+    padding: 4px 0 21px 42px;
+    border-bottom: 1px solid rgb(255 250 243 / 18%);
+  }
+
+  .magazine-trend-item:nth-child(n + 3) {
+    padding-top: 21px;
+    border-bottom: 0;
+  }
+
+  .magazine-trend-item > span {
+    position: absolute;
+    top: 5px;
+    left: 0;
+    color: #a77a4a;
+    font-family: Georgia, "Times New Roman", serif;
     font-size: 17px;
+    font-style: italic;
+  }
+
+  .magazine-trend-item:nth-child(n + 3) > span {
+    top: 22px;
+  }
+
+  .magazine-trend-item h3 {
+    margin: 0 0 7px;
+    color: #fffaf3;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -.02em;
+  }
+
+  .magazine-trend-item p {
+    margin: 0;
+    color: rgb(255 250 243 / 68%);
+    font-size: 13px;
     line-height: 1.65;
   }
-  .magazine-heading .magazine-update,
-  .magazine-attribution {
-    color: #62594f;
-    font-size: 13px;
+
+  .magazine-heading .section-kicker {
+    color: #e1bd91;
   }
+
+  .magazine-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+    margin: 0 0 25px;
+  }
+
+  .magazine-heading h2 {
+    margin-bottom: 0;
+  }
+
+  .magazine-heading .magazine-update {
+    margin: 0 0 5px;
+    color: var(--studio-muted);
+    font-size: 12px;
+    text-align: right;
+  }
+
   .magazine-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18px;
+    gap: 22px;
   }
+
   .magazine-card {
     display: flex;
     min-width: 0;
     flex-direction: column;
-    padding: 24px;
-    border: 1px solid rgb(119 60 61 / 14%);
-    border-radius: 16px;
-    background: #fffdf9;
-    box-shadow: 0 12px 32px rgb(52 37 28 / 6%);
-  }
-  .magazine-source {
-    color: var(--studio-wine);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-  }
-  .magazine-card h2 {
-    margin: 14px 0 10px;
-    font-size: 21px;
-    line-height: 1.4;
-  }
-  .magazine-card h2 a {
-    color: #302725;
-    text-decoration: none;
-  }
-  .magazine-card h2 a:hover,
-  .magazine-card-footer a:hover {
-    color: var(--studio-wine);
-    text-decoration: underline;
-  }
-  .magazine-card > p {
-    display: -webkit-box;
     overflow: hidden;
-    margin: 0 0 22px;
-    color: #514842;
-    font-size: 15px;
-    line-height: 1.6;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4;
+    border: 1px solid rgb(119 60 61 / 10%);
+    background: var(--studio-white);
+    box-shadow: 0 8px 26px rgb(52 37 28 / 5%);
+    transition: transform .2s ease, box-shadow .2s ease;
   }
-  .magazine-card-footer {
+
+  .magazine-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 34px rgb(52 37 28 / 10%);
+  }
+
+  .magazine-card-image {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    aspect-ratio: 1.42;
+    background: linear-gradient(135deg, #e6d9c9, #bba99a);
+  }
+
+  .magazine-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .45s ease;
+  }
+
+  .magazine-card:hover .magazine-card-image img {
+    transform: scale(1.035);
+  }
+
+  .magazine-image-fallback {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-content: center;
+    color: rgb(255 253 249 / 82%);
+    background: radial-gradient(circle at 70% 25%, #c7a781, transparent 30%), linear-gradient(145deg, #594443, #25201e);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 22px;
+    letter-spacing: .12em;
+    line-height: 1.15;
+    text-align: center;
+  }
+
+  .magazine-card-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 20px 21px 22px;
+  }
+
+  .magazine-card-meta {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    margin-top: auto;
-    padding-top: 16px;
-    border-top: 1px solid #e8dfd4;
-    color: #62594f;
-    font-size: 13px;
+    gap: 8px;
+    color: var(--studio-muted);
+    font-size: 10px;
   }
-  .magazine-card-footer a {
+
+  .magazine-source {
     color: var(--studio-wine);
+    font-size: 10px;
     font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  .magazine-card h3 {
+    margin: 14px 0 9px;
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .magazine-card h3 a {
+    color: var(--studio-ink);
     text-decoration: none;
   }
+
+  .magazine-card h3 a:hover {
+    color: var(--studio-wine);
+  }
+
+  .magazine-card-content > p {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 0 0 18px;
+    color: #62594f;
+    font-size: 13px;
+    line-height: 1.65;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .magazine-read-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    margin-top: auto;
+    padding-top: 12px;
+    color: var(--studio-wine);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-decoration: none;
+  }
+
+  .magazine-read-link:hover {
+    color: var(--studio-ink);
+    text-decoration: underline;
+  }
+
   .magazine-empty {
-    padding: 34px;
-    border: 1px solid #ded5c9;
-    border-radius: 16px;
-    background: #fffdf9;
+    padding: 32px;
+    border: 1px solid var(--studio-line);
+    background: var(--studio-white);
   }
+
   .magazine-empty h2 {
-    color: #302725;
+    margin-top: 0;
+    color: var(--studio-ink);
+    font-size: 24px;
   }
+
   .magazine-empty p {
-    color: #514842;
+    margin-bottom: 0;
+    color: var(--studio-muted);
   }
+
   .magazine-attribution {
-    margin-top: 24px;
-    line-height: 1.6;
+    margin: 24px 0 0;
+    color: rgb(255 250 243 / 68%);
+    font-size: 11px;
+    line-height: 1.7;
   }
-  @media (max-width: 900px) {
+
+  .magazine-attribution a {
+    color: #e1bd91;
+    text-underline-offset: 3px;
+  }
+
+  @media (max-width: 960px) {
+    .magazine-trend-banner {
+      min-height: 340px;
+      grid-template-columns: minmax(0, 1.35fr) minmax(180px, .65fr);
+      padding: 40px;
+    }
+
+    .magazine-trend-list {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
     .magazine-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
-  @media (max-width: 600px) {
+
+  @media (max-width: 720px) {
     .fashion-magazine {
       width: calc(100% - 32px);
-      padding-top: 34px;
+      padding-top: clamp(20px, 5vw, 28px);
     }
+
+    .fashion-magazine-page .store-nav {
+      justify-content: flex-start;
+      gap: clamp(14px, 4vw, 24px);
+      overflow-x: auto;
+      padding-right: 4px;
+      scrollbar-width: none;
+    }
+
+    .fashion-magazine-page .store-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .fashion-magazine-page .store-nav a {
+      flex: 0 0 auto;
+    }
+
+    .magazine-trend-banner {
+      min-height: 0;
+      grid-template-columns: 1fr;
+      padding: clamp(24px, 6vw, 34px) clamp(18px, 6vw, 28px) 20px;
+    }
+
+    .magazine-trend-copy h1 {
+      max-width: 480px;
+      font-size: clamp(36px, 10.5vw, 62px);
+    }
+
+    .magazine-trend-copy p {
+      font-size: 14px;
+    }
+
+    .magazine-trend-art {
+      min-height: 210px;
+      margin-top: 4px;
+    }
+
+    .magazine-trend-art::before {
+      width: 205px;
+    }
+
+    .magazine-trend-art::after {
+      width: 155px;
+    }
+
+    .magazine-trend-art i {
+      width: 88px;
+    }
+
+    .magazine-trend-list {
+      padding: 38px 0;
+    }
+
+    .magazine-trend-grid {
+      gap: 0 18px;
+    }
+
     .magazine-heading {
-      margin-bottom: 24px;
+      align-items: start;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
     }
-    .magazine-heading > p {
-      font-size: 15px;
+
+    .magazine-heading .magazine-update {
+      text-align: left;
     }
+
     .magazine-grid {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+      gap: 14px;
     }
-    .magazine-card {
-      padding: 20px;
+
+    .magazine-card-content {
+      padding: clamp(14px, 3vw, 16px);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .fashion-magazine {
+      width: calc(100% - 24px);
+    }
+
+    .magazine-trend-banner {
+      padding: 28px 18px 14px;
+    }
+
+    .magazine-trend-copy h1 {
+      font-size: clamp(34px, 10vw, 46px);
+    }
+
+    .magazine-trend-copy p {
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .magazine-trend-art {
+      min-height: 180px;
+    }
+
+    .magazine-trend-art::before {
+      width: 175px;
+    }
+
+    .magazine-trend-art::after {
+      width: 135px;
+    }
+
+    .magazine-trend-grid,
+    .magazine-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .magazine-trend-item,
+    .magazine-trend-item:nth-child(n + 3) {
+      padding: 16px 0 16px 38px;
+      border-bottom: 1px solid var(--studio-line);
+    }
+
+    .magazine-trend-item:first-child {
+      padding-top: 0;
+    }
+
+    .magazine-trend-item > span,
+    .magazine-trend-item:nth-child(n + 3) > span {
+      top: 16px;
+    }
+
+    .magazine-trend-item:first-child > span {
+      top: 0;
+    }
+
+    .magazine-card-image {
+      aspect-ratio: 1.6;
+    }
+
+    .magazine-card-content {
+      padding: 16px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .fashion-magazine {
+      width: calc(100% - 20px);
+    }
+
+    .magazine-trend-banner {
+      padding-right: 16px;
+      padding-left: 16px;
+    }
+
+    .magazine-trend-kicker,
+    .magazine-trend-list .section-kicker {
+      font-size: 9px;
+      letter-spacing: .12em;
+    }
+
+    .magazine-card-meta {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 4px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .magazine-card,
+    .magazine-card-image img {
+      transition: none;
     }
   }

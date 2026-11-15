@@ -47,6 +47,19 @@
             </div>
             <div class="magazine-trend-art" aria-hidden="true"><span>@currentYear</span><i></i><b>STYLE<br />IN MOTION</b></div>
         </section>
+        <section class="magazine-trend-list" aria-labelledby="magazine-trends-heading">
+            <div class="magazine-trend-list-heading">
+                <span class="section-kicker">GHI CHÚ PHONG CÁCH · @currentYear</span>
+                <h2 id="magazine-trends-heading">Bốn điểm nhấn <em>đáng thử</em></h2>
+                <p>Gợi ý cảm hứng để làm mới tủ đồ năm nay — linh hoạt theo cá tính và những món bạn đã có.</p>
+            </div>
+            <div class="magazine-trend-grid">
+                <article class="magazine-trend-item"><span>01</span><h3>Phom dáng có cấu trúc</h3><p>Blazer mềm, vai rõ và quần ống rộng tạo vẻ chỉn chu mà vẫn thoải mái.</p></article>
+                <article class="magazine-trend-item"><span>02</span><h3>Lớp sheer nhẹ nhàng</h3><p>Phối voan hoặc lưới mỏng cùng lớp nền tối giản để tạo chiều sâu vừa đủ.</p></article>
+                <article class="magazine-trend-item"><span>03</span><h3>Sắc màu tự nhiên</h3><p>Nâu đất, xanh olive và kem ấm kết hợp hài hòa trong trang phục hằng ngày.</p></article>
+                <article class="magazine-trend-item"><span>04</span><h3>Chất liệu giàu bề mặt</h3><p>Len dệt, da lộn và vải có kết cấu giúp tổng thể đơn sắc thêm thú vị.</p></article>
+            </div>
+        </section>
         <section class="magazine-heading" id="magazine-latest">
             <div><span class="section-kicker">W STUDIO · FASHION JOURNAL</span><h2>Tin mới <em>đáng chú ý</em></h2></div>
             @if (Model.LastUpdatedAt is DateTimeOffset updatedAt)
@@ -93,5 +106,6 @@
         <p class="magazine-attribution">Nguồn tin: <a href="https://www.elle.vn/thoi-trang/" target="_blank" rel="noopener noreferrer">ELLE Việt Nam</a>, <a href="https://bazaarvietnam.vn/thoi-trang/" target="_blank" rel="noopener noreferrer">Harper’s Bazaar Việt Nam</a> và <a href="https://fashionista.com/" target="_blank" rel="noopener noreferrer">Fashionista</a>. Chọn “Đọc bài gốc” để xem tin đầy đủ tại nguồn.</p>
     </main>
     <footer class="portal-footer"><span>© 2026 W Studio · Thời trang tuyển chọn</span></footer>
+    <script src="~/js/magazine.js" asp-append-version="true"></script>
 </body>
 </html>
