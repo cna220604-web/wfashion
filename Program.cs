@@ -10,33 +10,86 @@ using WebApplication1.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required.");
+    ?? builder.Configuration["DATABASE_URL"]
+    ?? throw new InvalidOperationException("Set ConnectionStrings:DefaultConnection (or DATABASE_URL) to the database connection string.");
+var configuredProvider = builder.Configuration["Database:Provider"]?.Trim().ToLowerInvariant();
+var isPostgresUri = connectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase)
+    || connectionString.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase);
+var looksLikePostgresConnection = isPostgresUri
+    || connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase)
+    || connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase);
+var databaseProvider = configuredProvider switch
+{
+    null or "" => looksLikePostgresConnection ? "postgresql" : "sqlite",
+    "sqlite" when looksLikePostgresConnection => throw new InvalidOperationException("Database:Provider is set to SQLite, but the connection string is PostgreSQL. Set Database__Provider=PostgreSQL or provide a SQLite connection string."),
+    "sqlite" => "sqlite",
+    "postgres" or "postgresql" => "postgresql",
+    var provider => throw new InvalidOperationException($"Unsupported Database:Provider '{provider}'. Use Sqlite or PostgreSQL.")
+};
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<SupportChatPresence>();
 builder.Services.AddScoped<OrderNotificationService>();
-var sqliteConnection = new SqliteConnectionStringBuilder(connectionString);
-if (!string.IsNullOrWhiteSpace(sqliteConnection.DataSource) &&
-    !string.Equals(sqliteConnection.DataSource, ":memory:", StringComparison.OrdinalIgnoreCase) &&
-    !sqliteConnection.DataSource.StartsWith("file:", StringComparison.OrdinalIgnoreCase) &&
-    !Path.IsPathRooted(sqliteConnection.DataSource))
+Action<DbContextOptionsBuilder> configureDatabase;
+if (databaseProvider == "sqlite")
 {
-    sqliteConnection.DataSource = Path.GetFullPath(
-        Path.Combine(builder.Environment.ContentRootPath, sqliteConnection.DataSource));
-}
-
-if (!string.IsNullOrWhiteSpace(sqliteConnection.DataSource) &&
-    !string.Equals(sqliteConnection.DataSource, ":memory:", StringComparison.OrdinalIgnoreCase) &&
-    !sqliteConnection.DataSource.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
-{
-    var databaseDirectory = Path.GetDirectoryName(sqliteConnection.DataSource);
-    if (!string.IsNullOrEmpty(databaseDirectory))
+    var sqliteConnection = new SqliteConnectionStringBuilder(connectionString);
+    if (!string.IsNullOrWhiteSpace(sqliteConnection.DataSource) &&
+        !string.Equals(sqliteConnection.DataSource, ":memory:", StringComparison.OrdinalIgnoreCase) &&
+        !sqliteConnection.DataSource.StartsWith("file:", StringComparison.OrdinalIgnoreCase) &&
+        !Path.IsPathRooted(sqliteConnection.DataSource))
     {
-        Directory.CreateDirectory(databaseDirectory);
+        sqliteConnection.DataSource = Path.GetFullPath(
+            Path.Combine(builder.Environment.ContentRootPath, sqliteConnection.DataSource));
     }
+
+    if (!string.IsNullOrWhiteSpace(sqliteConnection.DataSource) &&
+        !string.Equals(sqliteConnection.DataSource, ":memory:", StringComparison.OrdinalIgnoreCase) &&
+        !sqliteConnection.DataSource.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
+    {
+        var databaseDirectory = Path.GetDirectoryName(sqliteConnection.DataSource);
+        if (!string.IsNullOrEmpty(databaseDirectory))
+        {
+            Directory.CreateDirectory(databaseDirectory);
+        }
+    }
+
+    configureDatabase = options => options.UseSqlite(sqliteConnection.ConnectionString);
+}
+else
+{
+    var postgresConnectionString = connectionString;
+    if (isPostgresUri)
+    {
+        if (!Uri.TryCreate(connectionString, UriKind.Absolute, out var postgresUri)
+            || string.IsNullOrWhiteSpace(postgresUri.Host)
+            || string.IsNullOrWhiteSpace(postgresUri.AbsolutePath.Trim('/')))
+        {
+            throw new InvalidOperationException("The PostgreSQL URL is invalid. Copy the full connection string from your database provider.");
+        }
+
+        var credentials = postgresUri.UserInfo.Split(':', 2);
+        if (credentials.Length != 2)
+        {
+            throw new InvalidOperationException("The PostgreSQL URL must include its username and password. Set it as a secret in Render Environment.");
+        }
+
+        var postgresBuilder = new Npgsql.NpgsqlConnectionStringBuilder
+        {
+            Host = postgresUri.Host,
+            Port = postgresUri.IsDefaultPort ? 5432 : postgresUri.Port,
+            Database = Uri.UnescapeDataString(postgresUri.AbsolutePath.Trim('/')),
+            Username = Uri.UnescapeDataString(credentials[0]),
+            Password = Uri.UnescapeDataString(credentials[1]),
+            SslMode = Npgsql.SslMode.Require
+        };
+        postgresConnectionString = postgresBuilder.ConnectionString;
+    }
+
+    configureDatabase = options => options.UseNpgsql(postgresConnectionString);
 }
 
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(sqliteConnection.ConnectionString));
+builder.Services.AddDbContext<ApplicationDbContext>(configureDatabase);
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.User.RequireUniqueEmail = true;
@@ -106,7 +159,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
-app.Logger.LogInformation("Using SQLite database at {DatabasePath}", sqliteConnection.DataSource);
+app.Logger.LogInformation("Using {DatabaseProvider} database", databaseProvider);
 var persistentStoragePath = app.Configuration["Storage:PersistentPath"];
 if (!string.IsNullOrWhiteSpace(persistentStoragePath))
 {

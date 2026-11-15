@@ -14,12 +14,19 @@ public static class DatabaseSeeder
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
         await database.Database.EnsureCreatedAsync();
-        await EnsureFashionVideoSchemaAsync(database);
-        await EnsureUserProfileSchemaAsync(database);
-        await EnsureOrderReturnSchemaAsync(database);
-        await EnsureSupportChatSchemaAsync(database);
-        await EnsureProductReviewSchemaAsync(database);
-        await EnsureFinancialSchemaAsync(database);
+        if (database.Database.IsSqlite())
+        {
+            await EnsureFashionVideoSchemaAsync(database);
+            await EnsureUserProfileSchemaAsync(database);
+            await EnsureOrderReturnSchemaAsync(database);
+            await EnsureSupportChatSchemaAsync(database);
+            await EnsureProductReviewSchemaAsync(database);
+            await EnsureFinancialSchemaAsync(database);
+        }
+        else if (!database.Database.IsNpgsql())
+        {
+            throw new InvalidOperationException("The configured database provider is not supported by the schema initializer.");
+        }
 
         foreach (var roleName in AppRoles.All)
         {

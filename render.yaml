@@ -11,8 +11,10 @@ services:
         value: Production
       - key: ASPNETCORE_HTTP_PORTS
         value: "10000"
+      - key: Database__Provider
+        value: PostgreSQL
       - key: ConnectionStrings__DefaultConnection
-        value: Data Source=/var/data/app.db
+        sync: false
       - key: Storage__PersistentPath
         value: /var/data
       - key: Ai__Model

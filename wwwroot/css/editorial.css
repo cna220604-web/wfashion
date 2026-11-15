@@ -4031,3 +4031,215 @@ body.store-page {
   .admin-portal .fashion-video-admin-card { grid-template-columns: 90px minmax(0, 1fr); gap: 10px; }
 }
 
+
+/* Responsive refinements: safe-area-aware shell, touch sizing, and overflow containment. */
+html {
+  min-width: 320px;
+  overflow-x: clip;
+}
+
+body.store-page,
+body.portal-layout {
+  min-width: 320px;
+  overflow-x: clip;
+}
+
+.store-page :where(main, section, article, form, fieldset, nav, header, footer),
+.portal-layout :where(main, section, article, form, fieldset, nav, header, footer) {
+  min-width: 0;
+}
+
+.portal-layout .portal-header {
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
+}
+
+.portal-layout .portal-main,
+.portal-layout .portal-footer {
+  min-width: 0;
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
+}
+
+.portal-layout .portal-footer {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.store-page .store-header {
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
+}
+
+.store-page .chat-launcher {
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+}
+
+.store-page .chat-panel.is-expanded,
+.store-page .chat-panel {
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(82px, calc(env(safe-area-inset-bottom) + 70px));
+}
+
+.store-page dialog[open] {
+  max-width: calc(100vw - max(16px, env(safe-area-inset-left)) - max(16px, env(safe-area-inset-right)));
+  max-height: calc(100dvh - max(12px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)));
+  overscroll-behavior: contain;
+}
+
+.fashion-video-page {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.fashion-video-header {
+  padding-left: max(14px, env(safe-area-inset-left));
+  padding-right: max(14px, env(safe-area-inset-right));
+}
+
+.fashion-video-feed,
+.fashion-video-card {
+  min-width: 0;
+}
+
+.admin-portal .table-scroll,
+.staff-portal .table-scroll,
+.customer-portal .table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .portal-layout .portal-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+  }
+
+  .portal-layout .portal-nav {
+    min-width: 0;
+    flex: 1 1 600px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .portal-layout .portal-user {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .portal-layout .dashboard-page {
+    width: min(100%, 1440px);
+    padding-right: clamp(20px, 4vw, 48px);
+    padding-left: clamp(20px, 4vw, 48px);
+  }
+}
+
+@media (max-width: 760px) {
+  .portal-layout .portal-header,
+  .portal-layout .portal-main,
+  .portal-layout .portal-footer,
+  .store-page .store-header {
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+
+  .admin-portal .dashboard-page,
+  .staff-portal .dashboard-page,
+  .customer-portal .dashboard-page {
+    max-width: 100%;
+    padding-bottom: max(40px, env(safe-area-inset-bottom));
+  }
+
+  .portal-layout :where(input, select, textarea, button, .btn),
+  .store-page :where(input, select, textarea, button, .solid-button, .outline-button) {
+    max-width: 100%;
+  }
+
+  .portal-layout .portal-panel,
+  .portal-layout .dashboard-card,
+  .store-page .store-dialog {
+    min-width: 0;
+  }
+
+  .fashion-video-page {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .fashion-video-header {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (max-width: 640px) {
+  .portal-layout :where(input, select, textarea, button, .btn),
+  .store-page :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea, .solid-button, .outline-button, .cart-trigger, .icon-button, .dialog-close, .store-nav a, .chat-form button) {
+    min-height: 44px;
+  }
+
+  .portal-layout textarea,
+  .store-page textarea {
+    min-height: 96px;
+  }
+
+  .portal-layout .portal-nav {
+    row-gap: 4px;
+  }
+
+  .portal-layout .portal-nav > a,
+  .portal-layout .portal-nav-button {
+    min-height: 40px;
+  }
+
+  .portal-layout .table-scroll {
+    margin-right: -2px;
+    padding-bottom: 4px;
+  }
+
+.admin-portal .fashion-video-admin-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-portal .fashion-video-admin-card > video {
+    width: min(100%, 260px);
+    max-height: 220px;
+  }
+}
+
+@media (max-width: 380px) {
+  .portal-layout .portal-header,
+  .portal-layout .portal-main,
+  .portal-layout .portal-footer,
+  .store-page .store-header {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  .portal-layout .dashboard-tabs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fashion-video-header-label {
+    display: none;
+  }
+
+  .fashion-video-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-portal .management-table,
+  .staff-portal .management-table,
+  .customer-portal .management-table {
+    width: max-content;
+    min-width: 680px;
+    max-width: none;
+  }
+}

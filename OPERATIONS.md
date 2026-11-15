@@ -23,8 +23,9 @@
 
 ## Sao lưu và khôi phục
 
-- W Studio uses one SQLite database for the storefront, customer accounts, admin catalog, staff inventory, orders, reviews, fashion-video metadata, and support chat. For a durable non-demo deployment, back up SQLite with SQLite Online Backup API or stop the app before copying the database; do not copy only the main file while WAL is active. Back up uploaded product images, customer avatars, and `videos/fashion` alongside the database.
-- Render Free has ephemeral storage and can reset the SQLite database and uploaded files on sleep, restart, or redeploy. This is acceptable only for a demo; do not store important customer data there.
+- W Studio uses one configured database for the storefront, customer accounts, admin catalog, staff inventory, orders, reviews, fashion-video metadata, and support chat. Local development uses SQLite; Render uses PostgreSQL. Back up the database through the provider's supported backup/export tools. Back up uploaded product images, customer avatars, and `videos/fashion` separately.
+- Render Free web-service files are ephemeral, so uploaded media can be lost on redeploy/restart. PostgreSQL data is external to the web service; its availability, retention, limits, and backups depend on the selected database provider and plan. Do not rely on an unbacked-up free tier for important customer data.
+- The first PostgreSQL deployment creates a new schema but does not automatically import data from an existing SQLite file. Export/import records before switching if there is data to preserve; never point the app to an unverified database and assume accounts have been migrated.
 - Đánh giá sản phẩm được tạo thêm idempotent khi ứng dụng khởi động, chỉ dành cho sản phẩm thuộc đơn đã giao; mỗi sản phẩm chỉ được đánh giá một lần trong một đơn hàng. Nhân viên và quản trị viên có thể phản hồi/cập nhật phản hồi; khách xem phản hồi trong lịch sử đơn hàng của mình.
 - Định kỳ thử khôi phục database cùng ảnh upload vào môi trường riêng để `ImageId`/`AvatarImageId` không trỏ tới file thiếu.
 - Không đặt file backup trong `wwwroot` hoặc một thư mục được phục vụ công khai.

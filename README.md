@@ -1,6 +1,6 @@
 # WebApplication1 Studio
 
-Fashion storefront and role-based commerce application using ASP.NET Core MVC, ASP.NET Core Identity, EF Core 10, and SQLite.
+Fashion storefront and role-based commerce application using ASP.NET Core MVC, ASP.NET Core Identity, and EF Core 10. Local development uses SQLite; hosted deployments can use PostgreSQL.
 
 ## Run locally
 
@@ -9,7 +9,7 @@ dotnet restore
 dotnet run
 ```
 
-The application uses one SQLite database for the storefront, customer accounts, admin catalog, staff inventory, orders, reviews, and support chat. Locally it uses `App_Data/wstudio.db`; on Render the Blueprint configures `/var/data/app.db`. On first startup, EF Core creates missing tables and the app seeds any missing sample catalog products without replacing existing products, inventory, orders, or accounts in that SQLite file.
+The application uses one database for the storefront, customer accounts, admin catalog, staff inventory, orders, reviews, and support chat. Locally it uses SQLite at `App_Data/wstudio.db`; Render is configured for PostgreSQL so database records are independent of deploy instances. On first startup, EF Core creates the schema and the app seeds missing sample catalog products without replacing existing products, inventory, orders, or accounts.
 
 ## Create the first administrator
 
@@ -59,15 +59,15 @@ For Render, use environment variables such as `Ai__Providers__0__Type`, `Ai__Pro
 
 ## Deploy a free demo to Render
 
-1. Push this repository to GitHub. In Render, choose **New → Blueprint**, connect the repository, and let Render read `render.yaml`. The Blueprint selects the Free web-service plan.
-2. Render builds the app from `Dockerfile` and uses SQLite plus uploaded media on the service's ephemeral filesystem. This is suitable for a class-project demo, not production: the free service can sleep after inactivity, and the database, accounts, orders, uploaded images, and fashion videos can be lost whenever it sleeps, restarts, or redeploys. The first request after idle may take about a minute. Sample catalog products are recreated on startup.
-3. In the new service's **Environment** settings, add `AdminBootstrap__Email` and `AdminBootstrap__Password` if you need an admin account, and `Ai__ApiKey` if you want the AI stylist to work. Use secrets in Render's dashboard; never commit them to GitHub. Keep the bootstrap values configured if the demo database may be reset and you need the admin account recreated. SMTP variables are optional and only needed for email features.
-4. Deploy and wait for the service to become healthy. Render provides an HTTPS URL that can be shared for viewing the demo. Avoid entering important personal data because the free service does not provide persistent local storage.
+1. Create a PostgreSQL database with a provider that offers a free plan, then copy its private/internal connection string. Free plans have provider-specific limits and retention rules; review those before storing important customer data.
+2. Push this repository to GitHub. In Render, choose **New → Blueprint**, connect the repository, and let Render read `render.yaml`. The Blueprint selects the Free web-service plan.
+3. In the Render web service's **Environment** settings, set `Database__Provider` to `PostgreSQL` and `ConnectionStrings__DefaultConnection` to the complete PostgreSQL connection string from your database provider (Neon `postgres://` URLs are accepted). Keep it private; do not commit it or paste it into chat. Add `AdminBootstrap__Email` and `AdminBootstrap__Password` if a new database needs its initial admin, and `Ai__ApiKey` if you want the AI stylist.
+4. Deploy and wait for the service to become healthy. Render provides an HTTPS URL. PostgreSQL records (accounts, orders, products) are stored outside the web service, but uploaded files remain on Render's ephemeral filesystem unless separately persisted. Sample catalog products are recreated on an empty database.
 
 ## Operational notes
 
 - Product names, descriptions, prices, and inventory are sample catalog data. Replace them with verified store data before launch.
 - Sample product photos may use Unsplash and require an internet connection; uploaded images and fashion videos are stored under `Storage__PersistentPath` when configured, or under `wwwroot` locally. Fashion video uploads accept MP4/WebM up to 100 MB. On Render Free, uploaded files are ephemeral and can be lost when the service restarts, sleeps, or redeploys.
-- COD orders and inventory are persisted in the shared SQLite database. Order confirmation/status emails are sent only when SMTP settings and staff recipients are configured. Online payments, carrier tracking integration, email verification, password reset delivery, and production monitoring still need setup.
-- `EnsureCreated` initializes an empty SQLite database. Compatibility code adds app-specific columns and support tables idempotently at startup without dropping existing data. Employee online presence is process-local and expires after 75 seconds without a heartbeat; run a single app instance for live handoff. On Render Free, local files are ephemeral; sample catalog products are re-seeded if the database is reset.
+- COD orders and inventory are persisted in the configured database. Order confirmation/status emails are sent only when SMTP settings and staff recipients are configured. Online payments, carrier tracking integration, email verification, password reset delivery, and production monitoring still need setup.
+- `EnsureCreated` initializes a new database from the current EF model; it does not migrate an already-created PostgreSQL schema after future model changes. Add and apply EF Core migrations when changing the production schema. Existing SQLite databases keep their idempotent compatibility updates. Employee online presence is process-local and expires after 75 seconds without a heartbeat; run a single app instance for live handoff. On Render Free, uploaded files remain ephemeral.
 - Configure HTTPS, secure secrets, scheduled backups (including uploaded product images), SMTP, and trusted proxy settings before public deployment. See [OPERATIONS.md](OPERATIONS.md) for setup and restore guidance.

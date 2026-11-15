@@ -52,7 +52,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             .HasForeignKey(item => item.CustomerOrderId)
             .OnDelete(DeleteBehavior.Cascade);
         builder.Entity<ProductReview>().ToTable("ProductReviews", table =>
-            table.HasCheckConstraint("CK_ProductReviews_Rating", "[Rating] BETWEEN 1 AND 5"));
+            table.HasCheckConstraint("CK_ProductReviews_Rating", "\"Rating\" BETWEEN 1 AND 5"));
         builder.Entity<ProductReview>().Property(review => review.ProductSlug).HasMaxLength(80);
         builder.Entity<ProductReview>().Property(review => review.Comment).HasMaxLength(1000);
         builder.Entity<ProductReview>().Property(review => review.StaffReply).HasMaxLength(1000);
