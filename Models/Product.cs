@@ -4,10 +4,6 @@ namespace WebApplication1.Models;
 
 public sealed class Product
 {
-    public int ProductId { get; set; }
-    public int CategoryId { get; set; }
-    public ProductCategoryRecord? ProductCategory { get; set; }
-
     [Key, StringLength(80)]
     public string Slug { get; set; } = string.Empty;
 

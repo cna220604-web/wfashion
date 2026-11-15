@@ -41,7 +41,6 @@ public sealed class AdminController(
 
         var orders = await database.Orders.AsNoTracking().Include(order => order.Items)
             .OrderByDescending(order => order.CreatedAtUtc).Take(30).ToListAsync();
-        var usesSqlServer = database.Database.IsSqlServer();
         var model = new AdminDashboardViewModel
         {
             CustomerCount = userRows.Count(user => user.Role == AppRoles.Customer),
@@ -54,13 +53,7 @@ public sealed class AdminController(
             OperatingExpenseTotal = (await database.OperatingExpenses.AsNoTracking().Select(expense => expense.Amount).ToListAsync()).Sum(),
             RecentStockReceipts = await database.StockReceipts.AsNoTracking().OrderByDescending(receipt => receipt.ReceivedOn).ThenByDescending(receipt => receipt.Id).Take(50).ToListAsync(),
             RecentOperatingExpenses = await database.OperatingExpenses.AsNoTracking().OrderByDescending(expense => expense.SpentOn).ThenByDescending(expense => expense.Id).Take(50).ToListAsync(),
-            Products = usesSqlServer
-                ? await database.Products.AsNoTracking().Include(product => product.ProductCategory).OrderBy(product => product.Name).ToListAsync()
-                : await database.Products.AsNoTracking().OrderBy(product => product.Name).ToListAsync(),
-            ProductCategories = usesSqlServer
-                ? await database.ProductCategories.AsNoTracking().OrderBy(category => category.CategoryName).ToListAsync()
-                : [],
-            UsesSqlServer = usesSqlServer,
+            Products = await database.Products.AsNoTracking().OrderBy(product => product.Name).ToListAsync(),
             Users = userRows,
             RecentOrders = orders
         };
@@ -189,11 +182,6 @@ public sealed class AdminController(
     [RequestFormLimits(MultipartBodyLengthLimit = MaxProductImageRequestSize)]
     public async Task<IActionResult> SaveProduct(ProductEditViewModel model)
     {
-        if (!database.Database.IsSqlServer())
-        {
-            ModelState.Remove(nameof(model.CategoryId));
-        }
-
         if (!ModelState.IsValid)
         {
             var validationErrors = ModelState
@@ -209,7 +197,6 @@ public sealed class AdminController(
                 var fieldName = error.PropertyName switch
                 {
                     "ImageFile" => "Ảnh sản phẩm",
-                    "CategoryId" => "Danh mục dữ liệu",
                     "Slug" => "Mã sản phẩm",
                     "Name" => "Tên sản phẩm",
                     "Price" => "Giá",
@@ -250,13 +237,6 @@ public sealed class AdminController(
             }
         }
 
-        if (database.Database.IsSqlServer() &&
-            !await database.ProductCategories.AnyAsync(category => category.CategoryId == model.CategoryId))
-        {
-            TempData["Error"] = "Danh mục sản phẩm không tồn tại trong FashionStore.";
-            return RedirectToAction(nameof(Index), new { tab = "products" });
-        }
-
         var slug = model.Slug.Trim();
         var product = await database.Products.FirstOrDefaultAsync(item => item.Slug == slug);
         if (product is null && imageExtension is null)
@@ -272,10 +252,6 @@ public sealed class AdminController(
             database.Products.Add(product);
         }
 
-        if (database.Database.IsSqlServer())
-        {
-            product.CategoryId = model.CategoryId;
-        }
         product.Name = model.Name.Trim();
         product.Category = model.Category;
         product.Price = model.Price;

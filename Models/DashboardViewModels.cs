@@ -24,8 +24,6 @@ public sealed class AdminDashboardViewModel
     public IReadOnlyList<StockReceipt> RecentStockReceipts { get; init; } = [];
     public IReadOnlyList<OperatingExpense> RecentOperatingExpenses { get; init; } = [];
     public IReadOnlyList<Product> Products { get; init; } = [];
-    public IReadOnlyList<ProductCategoryRecord> ProductCategories { get; init; } = [];
-    public bool UsesSqlServer { get; init; }
     public IReadOnlyList<AdminUserRow> Users { get; init; } = [];
     public IReadOnlyList<CustomerOrder> RecentOrders { get; init; } = [];
 }

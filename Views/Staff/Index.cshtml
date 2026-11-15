@@ -101,7 +101,7 @@
         <div class="table-scroll"><table class="management-table"><thead><tr><th>Sản phẩm</th><th>Danh mục</th><th>Giá</th><th>Tồn kho</th><th>Cập nhật</th></tr></thead><tbody>
         @foreach (var product in Model.Products)
         {
-            <tr data-product-search-row data-search="@product.Name @product.Slug @product.Category"><td>@product.Name<small>@product.Slug</small></td><td>@product.Category</td><td>@product.Price.ToString("N0")₫</td><td>@product.Stock</td><td><form asp-action="UpdateStock" method="post" class="inline-action-form"><input type="hidden" name="slug" value="@product.Slug" /><input class="stock-input" type="number" name="stock" value="@product.Stock" min="0" max="100000" aria-label="Số lượng @product.Name" required /><button class="mini-submit" type="submit">Cập nhật</button></form></td></tr>
+            <tr data-product-search-row data-search="@product.Name @product.Slug @product.Category"><td>@product.Name<small>@product.Slug</small></td><td>@(product.Category switch { "women" => "Đồ nữ", "men" => "Đồ nam", _ => "Phụ kiện" })</td><td>@product.Price.ToString("N0")₫</td><td>@product.Stock</td><td><form asp-action="UpdateStock" method="post" class="inline-action-form"><input type="hidden" name="slug" value="@product.Slug" /><input class="stock-input" type="number" name="stock" value="@product.Stock" min="0" max="100000" aria-label="Số lượng @product.Name" required /><button class="mini-submit" type="submit">Cập nhật</button></form></td></tr>
         }
         <tr data-product-search-empty hidden><td colspan="5">Không tìm thấy sản phẩm phù hợp.</td></tr>
         </tbody></table></div>

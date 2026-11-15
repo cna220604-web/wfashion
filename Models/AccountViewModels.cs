@@ -172,9 +172,6 @@ public sealed class ProductEditViewModel
     [Required, StringLength(20, MinimumLength = 2), RegularExpression("^[A-Za-z0-9-]{2,20}$", ErrorMessage = "Mã sản phẩm chỉ gồm chữ cái, số và dấu gạch ngang; tối đa 20 ký tự.")]
     public string Slug { get; set; } = string.Empty;
 
-    [Range(1, int.MaxValue)]
-    public int CategoryId { get; set; }
-
     [Required, StringLength(120)]
     public string Name { get; set; } = string.Empty;
 

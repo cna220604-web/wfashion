@@ -8,7 +8,6 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Product> Products => Set<Product>();
-    public DbSet<ProductCategoryRecord> ProductCategories => Set<ProductCategoryRecord>();
     public DbSet<CustomerOrder> Orders => Set<CustomerOrder>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
@@ -20,41 +19,6 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-
-        if (Database.IsSqlServer())
-        {
-            builder.Entity<ProductCategoryRecord>().ToTable("Categories");
-            builder.Entity<ProductCategoryRecord>().HasKey(category => category.CategoryId);
-            builder.Entity<ProductCategoryRecord>().Property(category => category.CategoryId).HasColumnName("CategoryID");
-            builder.Entity<ProductCategoryRecord>().Property(category => category.CategoryName).HasColumnName("CategoryName").HasMaxLength(100);
-
-            builder.Entity<Product>().ToTable("Products");
-            builder.Entity<Product>().HasKey(product => product.ProductId);
-            builder.Entity<Product>().Property(product => product.ProductId).HasColumnName("ProductID").ValueGeneratedOnAdd();
-            builder.Entity<Product>().Property(product => product.CategoryId).HasColumnName("CategoryID");
-            builder.Entity<Product>().Property(product => product.Slug).HasColumnName("ProductCode").HasMaxLength(20).IsUnicode(false);
-            builder.Entity<Product>().Property(product => product.Name).HasColumnName("ProductName").HasMaxLength(200);
-            builder.Entity<Product>().Property(product => product.Category).HasColumnName("StoreCategory").HasMaxLength(30);
-            builder.Entity<Product>().Property(product => product.Price).HasColumnName("UnitPrice").HasPrecision(12, 2);
-            builder.Entity<Product>().Property(product => product.ImageId).HasMaxLength(100);
-            builder.Entity<Product>().Property(product => product.Description).HasMaxLength(500);
-            builder.Entity<Product>().Property(product => product.SizesCsv).HasColumnName("SizesCsv").HasMaxLength(100);
-            builder.Entity<Product>().Property(product => product.Color).HasMaxLength(50);
-            builder.Entity<Product>().Property(product => product.Stock).HasColumnName("StockQuantity");
-            builder.Entity<Product>().Property(product => product.CreatedAtUtc).HasColumnName("CreatedAt");
-            builder.Entity<Product>().HasIndex(product => product.Slug).IsUnique().HasDatabaseName("UQ_Products_ProductCode");
-            builder.Entity<Product>().HasOne(product => product.ProductCategory)
-                .WithMany(category => category.Products)
-                .HasForeignKey(product => product.CategoryId)
-                .OnDelete(DeleteBehavior.Restrict);
-        }
-        else
-        {
-            builder.Ignore<ProductCategoryRecord>();
-            builder.Entity<Product>().Ignore(product => product.ProductId);
-            builder.Entity<Product>().Ignore(product => product.CategoryId);
-            builder.Entity<Product>().Ignore(product => product.ProductCategory);
-        }
 
         builder.Entity<Product>().Property(product => product.Price).HasPrecision(12, 2);
         builder.Entity<StockReceipt>().ToTable("StockReceipts");

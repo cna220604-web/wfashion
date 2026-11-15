@@ -1,6 +1,6 @@
 # WebApplication1 Studio
 
-Fashion storefront and role-based commerce application using ASP.NET Core MVC, ASP.NET Core Identity, EF Core 10, and SQL Server or SQLite.
+Fashion storefront and role-based commerce application using ASP.NET Core MVC, ASP.NET Core Identity, EF Core 10, and SQLite.
 
 ## Run locally
 
@@ -9,7 +9,7 @@ dotnet restore
 dotnet run
 ```
 
-The application uses the configured SQL Server database (`FashionStore` on `DESKTOP-GKL0MG3`) by default with Windows Integrated Authentication. On first startup, EF Core creates application tables and seeds missing sample catalog products for SQLite; the sample seed has no product-count cap. Existing products, inventory, orders, and accounts are preserved. SQL Server uses the existing FashionStore catalog and does not seed the sample catalog. To use SQLite instead, set `Database:Provider` to `Sqlite` and configure `ConnectionStrings:DefaultConnection` with a SQLite connection string. The selected provider is logged at startup.
+The application uses one SQLite database for the storefront, customer accounts, admin catalog, staff inventory, orders, reviews, and support chat. Locally it uses `App_Data/wstudio.db`; on Render the Blueprint configures `/var/data/app.db`. On first startup, EF Core creates missing tables and the app seeds any missing sample catalog products without replacing existing products, inventory, orders, or accounts in that SQLite file.
 
 ## Create the first administrator
 
@@ -68,6 +68,6 @@ For Render, use environment variables such as `Ai__Providers__0__Type`, `Ai__Pro
 
 - Product names, descriptions, prices, and inventory are sample catalog data. Replace them with verified store data before launch.
 - Sample product photos may use Unsplash and require an internet connection; uploaded images are stored under `Storage__PersistentPath` when configured, or under `wwwroot/images` locally. On Render Free, uploaded files are ephemeral and can be lost when the service restarts, sleeps, or redeploys.
-- COD orders and inventory are persisted by the selected database provider. Order confirmation/status emails are sent only when SMTP settings and staff recipients are configured. Online payments, carrier tracking integration, email verification, password reset delivery, and production monitoring still need setup.
-- `EnsureCreated` initializes an empty selected database. Support-chat tables and indexes are also created idempotently at startup; on an existing SQL Server database they are added without deleting other data. Employee online presence is process-local and expires after 75 seconds without a heartbeat; run a single app instance for live handoff. Use reviewed EF Core migrations and a production-grade backup/restore strategy when deploying or changing an existing production schema.
+- COD orders and inventory are persisted in the shared SQLite database. Order confirmation/status emails are sent only when SMTP settings and staff recipients are configured. Online payments, carrier tracking integration, email verification, password reset delivery, and production monitoring still need setup.
+- `EnsureCreated` initializes an empty SQLite database. Compatibility code adds app-specific columns and support tables idempotently at startup without dropping existing data. Employee online presence is process-local and expires after 75 seconds without a heartbeat; run a single app instance for live handoff. On Render Free, local files are ephemeral; sample catalog products are re-seeded if the database is reset.
 - Configure HTTPS, secure secrets, scheduled backups (including uploaded product images), SMTP, and trusted proxy settings before public deployment. See [OPERATIONS.md](OPERATIONS.md) for setup and restore guidance.

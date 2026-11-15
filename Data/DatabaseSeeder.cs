@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models;
@@ -14,14 +13,7 @@ public static class DatabaseSeeder
         var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-        if (database.Database.IsSqlServer())
-        {
-            await EnsureSqlServerApplicationSchemaAsync(database);
-        }
-        else
-        {
-            await database.Database.EnsureCreatedAsync();
-        }
+        await database.Database.EnsureCreatedAsync();
         await EnsureUserProfileSchemaAsync(database);
         await EnsureOrderReturnSchemaAsync(database);
         await EnsureSupportChatSchemaAsync(database);
@@ -37,9 +29,7 @@ public static class DatabaseSeeder
             }
         }
 
-        if (!database.Database.IsSqlServer())
-        {
-            var catalog = new[]
+        var catalog = new[]
             {
             new Product { Slug = "look-01", Name = "Áo khoác dáng mềm", Category = "women", Price = 1890000, ImageId = "photo-1539109136881-3be0616acf4b", Description = "Phom dáng thanh lịch, chất liệu nhẹ cho những ngày chuyển mùa.", SizesCsv = "S,M,L", Color = "Nâu hạt dẻ", Stock = 18 },
             new Product { Slug = "look-02", Name = "Sơ mi cotton cổ điển", Category = "men", Price = 890000, ImageId = "photo-1598033129183-c4f50c736f10", Description = "Cotton thoáng mát cùng đường cắt gọn gàng, dễ mặc mỗi ngày.", SizesCsv = "S,M,L,XL", Color = "Trắng ngà", Stock = 24 },
@@ -66,11 +56,6 @@ public static class DatabaseSeeder
         {
             database.Products.AddRange(missingProducts);
             await database.SaveChangesAsync();
-        }
-        }
-        else
-        {
-            logger.LogInformation("Using existing FashionStore product records; sample catalog seeding is disabled for SQL Server.");
         }
 
         var adminEmail = configuration["AdminBootstrap:Email"];
@@ -106,103 +91,8 @@ public static class DatabaseSeeder
         }
     }
 
-    private static async Task EnsureSqlServerApplicationSchemaAsync(ApplicationDbContext database)
-    {
-        var createScript = database.Database.GenerateCreateScript();
-        var tableStatements = Regex.Matches(createScript,
-            @"CREATE TABLE\s+(?<name>(?:\[[^\]]+\]\.?)?\[[^\]]+\])\s*\([\s\S]*?\);",
-            RegexOptions.IgnoreCase);
-        foreach (Match tableStatement in tableStatements)
-        {
-            var tableName = tableStatement.Groups["name"].Value;
-            await database.Database.ExecuteSqlRawAsync(
-                $"IF OBJECT_ID(N'{tableName}', N'U') IS NULL BEGIN {tableStatement.Value} END;");
-        }
-
-        var indexStatements = Regex.Matches(createScript,
-            @"CREATE\s+(?:UNIQUE\s+)?INDEX\s+\[(?<index>[^\]]+)\]\s+ON\s+(?<table>(?:\[[^\]]+\]\.?)?\[[^\]]+\])[^;]*;",
-            RegexOptions.IgnoreCase);
-        foreach (Match indexStatement in indexStatements)
-        {
-            var indexName = indexStatement.Groups["index"].Value;
-            var tableName = indexStatement.Groups["table"].Value;
-            await database.Database.ExecuteSqlRawAsync(
-                $"IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'{indexName}' AND object_id = OBJECT_ID(N'{tableName}')) BEGIN {indexStatement.Value} END;");
-        }
-
-        var hasStoreCategory = await database.Database.SqlQueryRaw<int>(
-            "SELECT CASE WHEN COL_LENGTH(N'dbo.Products', N'StoreCategory') IS NULL THEN 0 ELSE 1 END AS [Value]")
-            .SingleAsync() == 1;
-        if (!hasStoreCategory)
-        {
-            await database.Database.ExecuteSqlRawAsync("""
-                ALTER TABLE [dbo].[Products] ADD [StoreCategory] nvarchar(30) NOT NULL
-                    CONSTRAINT [DF_Products_StoreCategory] DEFAULT N'accessories' WITH VALUES;
-                """);
-            await database.Database.ExecuteSqlRawAsync("""
-                UPDATE [dbo].[Products]
-                SET [StoreCategory] = CASE
-                    WHEN [Gender] = N'Nữ' THEN N'women'
-                    WHEN [Gender] = N'Nam/Nữ' THEN N'men'
-                    ELSE N'accessories'
-                END;
-                """);
-        }
-
-        var hasSizesCsv = await database.Database.SqlQueryRaw<int>(
-            "SELECT CASE WHEN COL_LENGTH(N'dbo.Products', N'SizesCsv') IS NULL THEN 0 ELSE 1 END AS [Value]")
-            .SingleAsync() == 1;
-        if (!hasSizesCsv)
-        {
-            await database.Database.ExecuteSqlRawAsync("""
-                ALTER TABLE [dbo].[Products] ADD [SizesCsv] nvarchar(100) NOT NULL
-                    CONSTRAINT [DF_Products_SizesCsv] DEFAULT N'ONE SIZE' WITH VALUES;
-                """);
-            await database.Database.ExecuteSqlRawAsync("""
-                UPDATE [dbo].[Products]
-                SET [SizesCsv] = CASE
-                    WHEN [Size] IS NULL OR LTRIM(RTRIM([Size])) = N'' THEN N'ONE SIZE'
-                    ELSE LTRIM(RTRIM([Size]))
-                END;
-                """);
-        }
-        await database.Database.ExecuteSqlRawAsync("""
-            IF COL_LENGTH(N'dbo.Products', N'ImageId') IS NULL
-                ALTER TABLE [dbo].[Products] ADD [ImageId] nvarchar(100) NOT NULL
-                    CONSTRAINT [DF_Products_ImageId] DEFAULT N'photo-1539109136881-3be0616acf4b' WITH VALUES;
-
-            IF COL_LENGTH(N'dbo.Products', N'Description') IS NULL
-                ALTER TABLE [dbo].[Products] ADD [Description] nvarchar(500) NOT NULL
-                    CONSTRAINT [DF_Products_Description] DEFAULT N'' WITH VALUES;
-            """);
-    }
-
     private static async Task EnsureUserProfileSchemaAsync(ApplicationDbContext database)
     {
-        if (database.Database.IsSqlServer())
-        {
-            await database.Database.ExecuteSqlRawAsync("""
-                IF COL_LENGTH(N'dbo.AspNetUsers', N'AvatarImageId') IS NULL
-                    ALTER TABLE [dbo].[AspNetUsers] ADD [AvatarImageId] nvarchar(100) NULL;
-
-                IF COL_LENGTH(N'dbo.AspNetUsers', N'PhoneNumberIsPublic') IS NULL
-                    ALTER TABLE [dbo].[AspNetUsers] ADD [PhoneNumberIsPublic] bit NOT NULL
-                        CONSTRAINT [DF_AspNetUsers_PhoneNumberIsPublic] DEFAULT 0 WITH VALUES;
-
-                IF COL_LENGTH(N'dbo.AspNetUsers', N'Gender') IS NULL
-                    ALTER TABLE [dbo].[AspNetUsers] ADD [Gender] nvarchar(30) NULL;
-
-                IF COL_LENGTH(N'dbo.AspNetUsers', N'Address') IS NULL
-                    ALTER TABLE [dbo].[AspNetUsers] ADD [Address] nvarchar(240) NULL;
-                """);
-            return;
-        }
-
-        if (!database.Database.IsSqlite())
-        {
-            throw new InvalidOperationException("Customer profile schema is not configured for the selected database provider.");
-        }
-
         var connection = database.Database.GetDbConnection();
         await database.Database.OpenConnectionAsync();
         try
@@ -245,26 +135,6 @@ public static class DatabaseSeeder
 
     private static async Task EnsureOrderReturnSchemaAsync(ApplicationDbContext database)
     {
-        if (database.Database.IsSqlServer())
-        {
-            await database.Database.ExecuteSqlRawAsync("""
-                IF COL_LENGTH(N'dbo.Orders', N'ReceivedAtUtc') IS NULL
-                    ALTER TABLE [dbo].[Orders] ADD [ReceivedAtUtc] datetime2 NULL;
-                IF COL_LENGTH(N'dbo.Orders', N'ReturnRequestedAtUtc') IS NULL
-                    ALTER TABLE [dbo].[Orders] ADD [ReturnRequestedAtUtc] datetime2 NULL;
-                IF COL_LENGTH(N'dbo.Orders', N'ReturnReason') IS NULL
-                    ALTER TABLE [dbo].[Orders] ADD [ReturnReason] nvarchar(1000) NULL;
-                IF COL_LENGTH(N'dbo.Orders', N'ReturnVideoId') IS NULL
-                    ALTER TABLE [dbo].[Orders] ADD [ReturnVideoId] nvarchar(50) NULL;
-                """);
-            return;
-        }
-
-        if (!database.Database.IsSqlite())
-        {
-            throw new InvalidOperationException("Order return schema is not configured for the selected database provider.");
-        }
-
         var connection = database.Database.GetDbConnection();
         await database.Database.OpenConnectionAsync();
         try
@@ -304,45 +174,6 @@ public static class DatabaseSeeder
 
     private static async Task EnsureProductReviewSchemaAsync(ApplicationDbContext database)
     {
-        if (database.Database.IsSqlServer())
-        {
-            await database.Database.ExecuteSqlRawAsync("""
-                IF OBJECT_ID(N'dbo.ProductReviews', N'U') IS NULL
-                BEGIN
-                    CREATE TABLE [dbo].[ProductReviews] (
-                        [Id] int IDENTITY(1,1) NOT NULL CONSTRAINT [PK_ProductReviews] PRIMARY KEY,
-                        [CustomerOrderId] int NOT NULL,
-                        [ProductSlug] nvarchar(80) NOT NULL,
-                        [Rating] int NOT NULL,
-                        [Comment] nvarchar(1000) NULL,
-                        CONSTRAINT [CK_ProductReviews_Rating] CHECK ([Rating] BETWEEN 1 AND 5),
-                        [CreatedAtUtc] datetime2 NOT NULL,
-                        CONSTRAINT [FK_ProductReviews_Orders_CustomerOrderId]
-                            FOREIGN KEY ([CustomerOrderId]) REFERENCES [dbo].[Orders] ([Id]) ON DELETE CASCADE
-                    );
-                END;
-
-                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ProductReviews_CustomerOrderId_ProductSlug' AND object_id = OBJECT_ID(N'dbo.ProductReviews'))
-                    CREATE UNIQUE INDEX [IX_ProductReviews_CustomerOrderId_ProductSlug] ON [dbo].[ProductReviews] ([CustomerOrderId], [ProductSlug]);
-
-                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ProductReviews_ProductSlug_CreatedAtUtc' AND object_id = OBJECT_ID(N'dbo.ProductReviews'))
-                    CREATE INDEX [IX_ProductReviews_ProductSlug_CreatedAtUtc] ON [dbo].[ProductReviews] ([ProductSlug], [CreatedAtUtc]);
-
-                IF COL_LENGTH(N'dbo.ProductReviews', N'StaffReply') IS NULL
-                    ALTER TABLE [dbo].[ProductReviews] ADD [StaffReply] nvarchar(1000) NULL;
-                IF COL_LENGTH(N'dbo.ProductReviews', N'StaffReplyBy') IS NULL
-                    ALTER TABLE [dbo].[ProductReviews] ADD [StaffReplyBy] nvarchar(100) NULL;
-                IF COL_LENGTH(N'dbo.ProductReviews', N'StaffRepliedAtUtc') IS NULL
-                    ALTER TABLE [dbo].[ProductReviews] ADD [StaffRepliedAtUtc] datetime2 NULL;
-                """);
-            return;
-        }
-
-        if (!database.Database.IsSqlite())
-        {
-            throw new InvalidOperationException("Product review schema is not configured for the selected database provider.");
-        }
-
         await database.Database.ExecuteSqlRawAsync("""
             CREATE TABLE IF NOT EXISTS "ProductReviews" (
                 "Id" INTEGER NOT NULL CONSTRAINT "PK_ProductReviews" PRIMARY KEY AUTOINCREMENT,
@@ -398,49 +229,6 @@ public static class DatabaseSeeder
 
     private static async Task EnsureFinancialSchemaAsync(ApplicationDbContext database)
     {
-        if (database.Database.IsSqlServer())
-        {
-            await database.Database.ExecuteSqlRawAsync("""
-                IF OBJECT_ID(N'dbo.StockReceipts', N'U') IS NULL
-                BEGIN
-                    CREATE TABLE [dbo].[StockReceipts] (
-                        [Id] int IDENTITY(1,1) NOT NULL CONSTRAINT [PK_StockReceipts] PRIMARY KEY,
-                        [ProductSlug] nvarchar(20) NOT NULL,
-                        [ProductName] nvarchar(120) NOT NULL,
-                        [Quantity] int NOT NULL,
-                        [UnitCost] decimal(12,2) NOT NULL,
-                        [Supplier] nvarchar(120) NOT NULL,
-                        [Reference] nvarchar(80) NOT NULL,
-                        [ReceivedOn] date NOT NULL,
-                        [Notes] nvarchar(500) NOT NULL,
-                        [RecordedBy] nvarchar(450) NOT NULL,
-                        [CreatedAtUtc] datetime2 NOT NULL
-                    );
-                END;
-
-                IF OBJECT_ID(N'dbo.OperatingExpenses', N'U') IS NULL
-                BEGIN
-                    CREATE TABLE [dbo].[OperatingExpenses] (
-                        [Id] int IDENTITY(1,1) NOT NULL CONSTRAINT [PK_OperatingExpenses] PRIMARY KEY,
-                        [Category] nvarchar(80) NOT NULL,
-                        [Description] nvarchar(160) NOT NULL,
-                        [Amount] decimal(12,2) NOT NULL,
-                        [Supplier] nvarchar(120) NOT NULL,
-                        [SpentOn] date NOT NULL,
-                        [Notes] nvarchar(500) NOT NULL,
-                        [RecordedBy] nvarchar(450) NOT NULL,
-                        [CreatedAtUtc] datetime2 NOT NULL
-                    );
-                END;
-                """);
-            return;
-        }
-
-        if (!database.Database.IsSqlite())
-        {
-            throw new InvalidOperationException("Financial record schema is not configured for the selected database provider.");
-        }
-
         await database.Database.ExecuteSqlRawAsync("""
             CREATE TABLE IF NOT EXISTS "StockReceipts" (
                 "Id" INTEGER NOT NULL CONSTRAINT "PK_StockReceipts" PRIMARY KEY AUTOINCREMENT,
@@ -471,17 +259,6 @@ public static class DatabaseSeeder
 
     private static async Task EnsureSupportChatSchemaAsync(ApplicationDbContext database)
     {
-        if (database.Database.IsSqlServer())
-        {
-            await EnsureSqlServerSupportChatSchemaAsync(database);
-            return;
-        }
-
-        if (!database.Database.IsSqlite())
-        {
-            throw new InvalidOperationException("Support chat schema is not configured for the selected database provider.");
-        }
-
         await database.Database.ExecuteSqlRawAsync("""
             CREATE TABLE IF NOT EXISTS "SupportConversations" (
                 "Id" INTEGER NOT NULL CONSTRAINT "PK_SupportConversations" PRIMARY KEY AUTOINCREMENT,
@@ -543,53 +320,6 @@ public static class DatabaseSeeder
         {
             await database.Database.CloseConnectionAsync();
         }
-    }
-
-    private static async Task EnsureSqlServerSupportChatSchemaAsync(ApplicationDbContext database)
-    {
-        await database.Database.ExecuteSqlRawAsync("""
-            IF OBJECT_ID(N'dbo.SupportConversations', N'U') IS NULL
-            BEGIN
-                CREATE TABLE [dbo].[SupportConversations] (
-                    [Id] int IDENTITY(1,1) NOT NULL CONSTRAINT [PK_SupportConversations] PRIMARY KEY,
-                    [CustomerUserId] nvarchar(450) NOT NULL,
-                    [ClientSessionId] nvarchar(36) NOT NULL CONSTRAINT [DF_SupportConversations_ClientSessionId] DEFAULT N'',
-                    [AssignedEmployeeUserId] nvarchar(450) NULL,
-                    [Status] nvarchar(20) NOT NULL,
-                    [CreatedAtUtc] datetime2 NOT NULL,
-                    [UpdatedAtUtc] datetime2 NOT NULL
-                );
-            END;
-
-            IF OBJECT_ID(N'dbo.SupportMessages', N'U') IS NULL
-            BEGIN
-                CREATE TABLE [dbo].[SupportMessages] (
-                    [Id] int IDENTITY(1,1) NOT NULL CONSTRAINT [PK_SupportMessages] PRIMARY KEY,
-                    [ConversationId] int NOT NULL,
-                    [SenderUserId] nvarchar(450) NOT NULL,
-                    [SenderName] nvarchar(100) NOT NULL,
-                    [SenderRole] nvarchar(20) NOT NULL,
-                    [Content] nvarchar(1200) NOT NULL,
-                    [CreatedAtUtc] datetime2 NOT NULL,
-                    CONSTRAINT [FK_SupportMessages_SupportConversations_ConversationId]
-                        FOREIGN KEY ([ConversationId]) REFERENCES [dbo].[SupportConversations] ([Id]) ON DELETE CASCADE
-                );
-            END;
-
-            IF COL_LENGTH(N'dbo.SupportConversations', N'ClientSessionId') IS NULL
-            BEGIN
-                ALTER TABLE [dbo].[SupportConversations]
-                    ADD [ClientSessionId] nvarchar(36) NOT NULL
-                        CONSTRAINT [DF_SupportConversations_ClientSessionId] DEFAULT N'';
-            END;
-
-            IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_SupportConversations_CustomerUserId_ClientSessionId_Status' AND object_id = OBJECT_ID(N'dbo.SupportConversations'))
-                CREATE INDEX [IX_SupportConversations_CustomerUserId_ClientSessionId_Status] ON [dbo].[SupportConversations] ([CustomerUserId], [ClientSessionId], [Status]);
-            IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_SupportConversations_AssignedEmployeeUserId_Status' AND object_id = OBJECT_ID(N'dbo.SupportConversations'))
-                CREATE INDEX [IX_SupportConversations_AssignedEmployeeUserId_Status] ON [dbo].[SupportConversations] ([AssignedEmployeeUserId], [Status]);
-            IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_SupportMessages_ConversationId_Id' AND object_id = OBJECT_ID(N'dbo.SupportMessages'))
-                CREATE INDEX [IX_SupportMessages_ConversationId_Id] ON [dbo].[SupportMessages] ([ConversationId], [Id]);
-            """);
     }
 
     private static IEnumerable<Product> CreateAdditionalProducts()

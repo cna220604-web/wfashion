@@ -23,10 +23,10 @@
 
 ## Sao lưu và khôi phục
 
-- **SQL Server:** thiết lập SQL Server Agent/maintenance plan để backup định kỳ database `FashionStore` ra nơi lưu trữ riêng; mã hóa bản backup, giới hạn quyền đọc và giữ bản sao ngoài máy chủ ứng dụng. Theo lịch, khôi phục thử vào database không production và xác minh sản phẩm, tài khoản, đơn hàng trước khi coi backup là dùng được.
-- **SQLite:** dùng SQLite Online Backup API hoặc dừng ứng dụng trước khi sao chép database; không sao chép riêng file đang mở khi WAL đang hoạt động. Lưu cả ảnh sản phẩm trong `wwwroot/images/uploads` và ảnh đại diện khách hàng trong `wwwroot/images/avatars`.
+- W Studio uses one SQLite database for the storefront, customer accounts, admin catalog, staff inventory, orders, reviews, and support chat. For a durable non-demo deployment, back up SQLite with SQLite Online Backup API or stop the app before copying the database; do not copy only the main file while WAL is active. Back up uploaded product images and customer avatars alongside the database.
+- Render Free has ephemeral storage and can reset the SQLite database and uploaded files on sleep, restart, or redeploy. This is acceptable only for a demo; do not store important customer data there.
 - Đánh giá sản phẩm được tạo thêm idempotent khi ứng dụng khởi động, chỉ dành cho sản phẩm thuộc đơn đã giao; mỗi sản phẩm chỉ được đánh giá một lần trong một đơn hàng. Nhân viên và quản trị viên có thể phản hồi/cập nhật phản hồi; khách xem phản hồi trong lịch sử đơn hàng của mình.
-- Với cả hai provider, backup ảnh upload cùng thời điểm với database để `ImageId`/`AvatarImageId` không trỏ tới file thiếu. Định kỳ thử khôi phục toàn bộ vào môi trường riêng.
+- Định kỳ thử khôi phục database cùng ảnh upload vào môi trường riêng để `ImageId`/`AvatarImageId` không trỏ tới file thiếu.
 - Không đặt file backup trong `wwwroot` hoặc một thư mục được phục vụ công khai.
 
 ## Kiểm tra trước khi phát hành

@@ -9,49 +9,34 @@ using WebApplication1.Models;
 using WebApplication1.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-var databaseProvider = builder.Configuration["Database:Provider"] ?? "SqlServer";
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required.");
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<SupportChatPresence>();
 builder.Services.AddScoped<OrderNotificationService>();
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+var sqliteConnection = new SqliteConnectionStringBuilder(connectionString);
+if (!string.IsNullOrWhiteSpace(sqliteConnection.DataSource) &&
+    !string.Equals(sqliteConnection.DataSource, ":memory:", StringComparison.OrdinalIgnoreCase) &&
+    !sqliteConnection.DataSource.StartsWith("file:", StringComparison.OrdinalIgnoreCase) &&
+    !Path.IsPathRooted(sqliteConnection.DataSource))
 {
-    if (string.Equals(databaseProvider, "SqlServer", StringComparison.OrdinalIgnoreCase))
-    {
-        options.UseSqlServer(connectionString);
-    }
-    else if (string.Equals(databaseProvider, "Sqlite", StringComparison.OrdinalIgnoreCase))
-    {
-        var sqliteConnection = new SqliteConnectionStringBuilder(connectionString);
-        if (!string.IsNullOrWhiteSpace(sqliteConnection.DataSource) &&
-            !string.Equals(sqliteConnection.DataSource, ":memory:", StringComparison.OrdinalIgnoreCase) &&
-            !sqliteConnection.DataSource.StartsWith("file:", StringComparison.OrdinalIgnoreCase) &&
-            !Path.IsPathRooted(sqliteConnection.DataSource))
-        {
-            sqliteConnection.DataSource = Path.GetFullPath(
-                Path.Combine(builder.Environment.ContentRootPath, sqliteConnection.DataSource));
-        }
+    sqliteConnection.DataSource = Path.GetFullPath(
+        Path.Combine(builder.Environment.ContentRootPath, sqliteConnection.DataSource));
+}
 
-        if (!string.IsNullOrWhiteSpace(sqliteConnection.DataSource) &&
-            !string.Equals(sqliteConnection.DataSource, ":memory:", StringComparison.OrdinalIgnoreCase) &&
-            !sqliteConnection.DataSource.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
-        {
-            var databaseDirectory = Path.GetDirectoryName(sqliteConnection.DataSource);
-            if (!string.IsNullOrEmpty(databaseDirectory))
-            {
-                Directory.CreateDirectory(databaseDirectory);
-            }
-        }
-
-        options.UseSqlite(sqliteConnection.ConnectionString);
-    }
-    else
+if (!string.IsNullOrWhiteSpace(sqliteConnection.DataSource) &&
+    !string.Equals(sqliteConnection.DataSource, ":memory:", StringComparison.OrdinalIgnoreCase) &&
+    !sqliteConnection.DataSource.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
+{
+    var databaseDirectory = Path.GetDirectoryName(sqliteConnection.DataSource);
+    if (!string.IsNullOrEmpty(databaseDirectory))
     {
-        throw new InvalidOperationException($"Unsupported database provider '{databaseProvider}'. Use SqlServer or Sqlite.");
+        Directory.CreateDirectory(databaseDirectory);
     }
-});
+}
+
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(sqliteConnection.ConnectionString));
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.User.RequireUniqueEmail = true;
@@ -121,7 +106,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
-app.Logger.LogInformation("Using {DatabaseProvider} database", databaseProvider);
+app.Logger.LogInformation("Using SQLite database at {DatabasePath}", sqliteConnection.DataSource);
 var persistentStoragePath = app.Configuration["Storage:PersistentPath"];
 if (!string.IsNullOrWhiteSpace(persistentStoragePath))
 {
