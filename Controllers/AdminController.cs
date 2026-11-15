@@ -41,6 +41,7 @@ public sealed class AdminController(
 
         var orders = await database.Orders.AsNoTracking().Include(order => order.Items)
             .OrderByDescending(order => order.CreatedAtUtc).Take(30).ToListAsync();
+        var usesSqlServer = database.Database.IsSqlServer();
         var model = new AdminDashboardViewModel
         {
             CustomerCount = userRows.Count(user => user.Role == AppRoles.Customer),
@@ -53,12 +54,13 @@ public sealed class AdminController(
             OperatingExpenseTotal = (await database.OperatingExpenses.AsNoTracking().Select(expense => expense.Amount).ToListAsync()).Sum(),
             RecentStockReceipts = await database.StockReceipts.AsNoTracking().OrderByDescending(receipt => receipt.ReceivedOn).ThenByDescending(receipt => receipt.Id).Take(50).ToListAsync(),
             RecentOperatingExpenses = await database.OperatingExpenses.AsNoTracking().OrderByDescending(expense => expense.SpentOn).ThenByDescending(expense => expense.Id).Take(50).ToListAsync(),
-            Products = database.Database.IsSqlServer()
+            Products = usesSqlServer
                 ? await database.Products.AsNoTracking().Include(product => product.ProductCategory).OrderBy(product => product.Name).ToListAsync()
                 : await database.Products.AsNoTracking().OrderBy(product => product.Name).ToListAsync(),
-            ProductCategories = database.Database.IsSqlServer()
+            ProductCategories = usesSqlServer
                 ? await database.ProductCategories.AsNoTracking().OrderBy(category => category.CategoryName).ToListAsync()
                 : [],
+            UsesSqlServer = usesSqlServer,
             Users = userRows,
             RecentOrders = orders
         };
@@ -187,6 +189,11 @@ public sealed class AdminController(
     [RequestFormLimits(MultipartBodyLengthLimit = MaxProductImageRequestSize)]
     public async Task<IActionResult> SaveProduct(ProductEditViewModel model)
     {
+        if (!database.Database.IsSqlServer())
+        {
+            ModelState.Remove(nameof(model.CategoryId));
+        }
+
         if (!ModelState.IsValid)
         {
             var validationErrors = ModelState
