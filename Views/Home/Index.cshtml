@@ -44,7 +44,7 @@
             <a href="#collection" data-nav-category="women">Nữ</a>
             <a href="#collection" data-nav-category="men">Nam</a>
             <a href="#collection" data-nav-category="accessories">Phụ kiện</a>
-            <a href="#fashion-videos">Video fashion</a>
+            <a asp-controller="FashionVideos" asp-action="Index">Video fashion</a>
         </nav>
         <div class="header-actions">
             <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Tìm sản phẩm" aria-label="Tìm sản phẩm" /></label>
@@ -80,32 +80,6 @@
                 <span class="hero-art-index">01 / @Model.Products.Count.ToString("D2")</span>
             </div>
             <div class="hero-side-note">THỜI TRANG CÓ CHỦ ĐÍCH — THIẾT KẾ CHO MỌI NGÀY</div>
-        </section>
-
-        <section id="fashion-videos" class="fashion-videos" aria-labelledby="fashion-videos-heading">
-            <div class="fashion-videos-heading">
-                <div><span class="section-kicker">W STUDIO · VIDEO FASHION</span><h2 id="fashion-videos-heading">Xem outfit. <em>Chọn món bạn thích.</em></h2><p>Lướt để khám phá video và mở sản phẩm ngay trên từng outfit.</p></div>
-                <span class="fashion-video-swipe-hint" aria-hidden="true">LƯỚT ĐỂ XEM TIẾP ↓</span>
-            </div>
-            @if (Model.FashionVideos.Count == 0)
-            {
-                <p class="fashion-videos-empty">Video outfit mới sẽ xuất hiện tại đây.</p>
-            }
-            else
-            {
-                <div class="fashion-video-feed" aria-label="Video thời trang">
-                    @foreach (var video in Model.FashionVideos)
-                    {
-                        <article class="fashion-video-card">
-                            <video class="fashion-video-player" controls muted loop playsinline preload="none" aria-label="Video @video.Caption">
-                                <source src="@Url.Content($"~/videos/fashion/{video.VideoFileName}")" type="@(video.VideoFileName.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) ? "video/webm" : "video/mp4")" />
-                                Trình duyệt của bạn không hỗ trợ phát video.
-                            </video>
-                            <div class="fashion-video-overlay"><span class="fashion-video-caption">@video.Caption</span><button type="button" class="fashion-video-product" data-product="@video.ProductSlug"><span>@video.ProductName</span><strong>@video.ProductPrice.ToString("N0")₫ · XEM & MUA ↗</strong></button></div>
-                        </article>
-                    }
-                </div>
-            }
         </section>
 
         <section id="season-studio" class="season-studio" data-season="autumn" aria-labelledby="season-heading">

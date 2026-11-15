@@ -1,0 +1,53 @@
+@model IReadOnlyList<StorefrontFashionVideo>
+@{
+    Layout = null;
+    ViewData["Title"] = "Video fashion";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#211b19" />
+    <meta name="description" content="Lướt video outfit W Studio và mua ngay sản phẩm bạn yêu thích." />
+    <title>@ViewData["Title"] — W Studio</title>
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/editorial.css" asp-append-version="true" />
+</head>
+<body class="fashion-video-page">
+    <header class="fashion-video-header">
+        <a class="fashion-video-back" asp-controller="Home" asp-action="Index" aria-label="Quay lại cửa hàng">← <span>Cửa hàng</span></a>
+        <a class="fashion-video-brand" asp-controller="Home" asp-action="Index">W <span>STUDIO</span></a>
+        <span class="fashion-video-header-label">VIDEO FASHION</span>
+    </header>
+    <main class="fashion-video-main">
+        @if (Model.Count == 0)
+        {
+            <section class="fashion-video-empty"><span>W STUDIO · VIDEO FASHION</span><h1>Video mới sắp lên sóng.</h1><p>Hiện chưa có video sản phẩm nào được đăng.</p><a asp-controller="Home" asp-action="Index">Khám phá cửa hàng ↗</a></section>
+        }
+        else
+        {
+            <div class="fashion-video-feed" aria-label="Video thời trang">
+                @foreach (var video in Model)
+                {
+                    <article class="fashion-video-card">
+                        <video class="fashion-video-player" controls muted loop playsinline preload="none" aria-label="Video @video.Caption">
+                            <source src="@Url.Content($"~/videos/fashion/{video.VideoFileName}")" type="@(video.VideoFileName.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) ? "video/webm" : "video/mp4")" />
+                            Trình duyệt của bạn không hỗ trợ phát video.
+                        </video>
+                        <div class="fashion-video-overlay">
+                            <span class="fashion-video-caption">@video.Caption</span>
+                            <a class="fashion-video-product" href="@Url.Action("Index", "Home", new { product = video.ProductSlug })">
+                                <span>@video.ProductName</span>
+                                <strong>@video.ProductPrice.ToString("N0")₫ · XEM & MUA ↗</strong>
+                            </a>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </main>
+    <script src="~/js/fashion-videos.js" asp-append-version="true"></script>
+</body>
+</html>

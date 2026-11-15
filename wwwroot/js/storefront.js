@@ -739,6 +739,10 @@ if (pendingPurchase && typeof pendingPurchase.id === 'string' && typeof pendingP
     }
     saveStore('studio.pending-purchase', null);
 }
+const requestedProductId = new URLSearchParams(window.location.search).get('product');
+if (requestedProductId && products.some(product => product.id === requestedProductId)) {
+    requestAnimationFrame(() => openProduct(requestedProductId));
+}
 document.getElementById('cart-empty').querySelector('.text-link').addEventListener('click', () => document.getElementById('collection').scrollIntoView({ behavior: 'smooth' }));
 document.getElementById('products-previous').addEventListener('click', () => {
     currentProductPage--;
@@ -1267,28 +1271,6 @@ const loadCurrentSupportChat = async () => {
         showToast(error.message);
     }
 };
-
-const fashionVideoFeed = document.querySelector('.fashion-video-feed');
-if (fashionVideoFeed) {
-    fashionVideoFeed.addEventListener('click', event => {
-        const productButton = event.target.closest('[data-product]');
-        if (productButton) openProduct(productButton.dataset.product);
-    });
-
-    if ('IntersectionObserver' in window) {
-        const videoObserver = new IntersectionObserver(entries => {
-            entries.forEach(entry => {
-                const video = entry.target;
-                if (entry.isIntersecting) {
-                    video.play().catch(() => { video.controls = true; });
-                } else {
-                    video.pause();
-                }
-            });
-        }, { threshold: 0.65 });
-        fashionVideoFeed.querySelectorAll('.fashion-video-player').forEach(video => videoObserver.observe(video));
-    }
-}
 
 if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const revealTargets = document.querySelectorAll([

@@ -3,7 +3,6 @@ namespace WebApplication1.Models;
 public sealed class StorefrontViewModel
 {
     public IReadOnlyList<Product> Products { get; init; } = [];
-    public IReadOnlyList<StorefrontFashionVideo> FashionVideos { get; init; } = [];
     public IReadOnlyDictionary<string, ProductReviewSummary> Reviews { get; init; } = new Dictionary<string, ProductReviewSummary>();
     public string CustomerName { get; init; } = string.Empty;
     public string CustomerPhone { get; init; } = string.Empty;
