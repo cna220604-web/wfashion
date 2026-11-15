@@ -3546,3 +3546,382 @@ body.store-page {
 .admin-portal .table-scroll,
 .staff-portal .table-scroll { border-radius: 12px;}
 
+@media (max-width: 760px) {
+  .admin-portal,
+  .staff-portal {
+    overflow-x: hidden;
+  }
+
+  .admin-portal .portal-header,
+  .staff-portal .portal-header {
+    position: relative;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    padding: 10px 18px;
+  }
+
+  .admin-portal .portal-nav,
+  .staff-portal .portal-nav {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+
+  .admin-portal .portal-nav > a,
+  .admin-portal .portal-nav-button,
+  .staff-portal .portal-nav > a,
+  .staff-portal .portal-nav-button {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .admin-portal .portal-user,
+  .staff-portal .portal-user {
+    display: none;
+  }
+
+  .admin-portal .dashboard-page,
+  .staff-portal .dashboard-page {
+    width: 100%;
+    padding: 28px 16px 48px;
+  }
+
+  .admin-portal .dashboard-heading,
+  .staff-portal .dashboard-heading {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .admin-portal .dashboard-heading h1,
+  .staff-portal .dashboard-heading h1 {
+    font-size: clamp(28px, 8vw, 38px);
+  }
+
+  .admin-portal .dashboard-heading p,
+  .staff-portal .dashboard-heading p {
+    font-size: 14px;
+  }
+
+  .admin-portal .metric-grid,
+  .staff-portal .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  .admin-portal .metric-card,
+  .staff-portal .metric-card {
+    min-width: 0;
+    min-height: 96px;
+    padding: 12px;
+  }
+
+  .admin-portal .metric-card > span,
+  .staff-portal .metric-card > span {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  .admin-portal .metric-card > strong,
+  .staff-portal .metric-card > strong {
+    font-size: clamp(22px, 6vw, 30px);
+    overflow-wrap: anywhere;
+  }
+
+  .admin-portal .sales-metric > strong {
+    font-size: clamp(16px, 4.5vw, 22px);
+  }
+
+  .admin-portal .dashboard-tabs,
+  .staff-portal .dashboard-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    overflow: visible;
+  }
+
+  .admin-portal .dashboard-tabs a,
+  .staff-portal .dashboard-tabs a {
+    min-width: 0;
+    padding: 9px 8px;
+    font-size: 12px;
+    line-height: 1.35;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .admin-portal .portal-panel,
+  .staff-portal .portal-panel {
+    min-width: 0;
+    margin: 14px 0;
+    padding: 16px;
+  }
+
+  .admin-portal .panel-heading,
+  .staff-portal .panel-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .admin-portal .portal-panel h2,
+  .staff-portal .portal-panel h2 {
+    font-size: clamp(22px, 6vw, 28px);
+  }
+
+  .admin-portal .admin-finance-forms {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .admin-portal .product-admin-form,
+  .admin-portal .product-admin-form.finance-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .admin-portal .product-admin-form .wide-field,
+  .admin-portal .product-admin-form > .mini-submit,
+  .admin-portal .product-admin-form > .portal-check {
+    grid-column: 1 / -1;
+  }
+
+  .admin-portal .product-admin-form > label,
+  .admin-portal .product-edit-form > label,
+  .staff-portal .product-search > label {
+    min-width: 0;
+  }
+
+  .admin-portal .portal-input,
+  .admin-portal .portal-select,
+  .staff-portal .portal-input,
+  .staff-portal .portal-select,
+  .staff-portal .stock-input {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .admin-portal .product-search,
+  .staff-portal .product-search {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .admin-portal .product-search [data-product-search-count],
+  .staff-portal .product-search [data-product-search-count] {
+    grid-column: 1 / -1;
+  }
+
+  .admin-portal .table-scroll,
+  .staff-portal .table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-portal .management-table,
+  .staff-portal .management-table {
+    min-width: 680px;
+  }
+
+  .staff-portal .support-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .staff-portal .support-conversation-list {
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .staff-portal .support-thread {
+    min-width: 0;
+  }
+
+  .staff-portal .staff-order-search {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .staff-portal .staff-order-search .text-action {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 380px) {
+  .admin-portal .dashboard-page,
+  .staff-portal .dashboard-page {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .admin-portal .metric-grid,
+  .staff-portal .metric-grid {
+    gap: 8px;
+  }
+
+  .admin-portal .metric-card,
+  .staff-portal .metric-card {
+    padding: 10px;
+  }
+
+  .admin-portal .product-admin-form,
+  .admin-portal .product-admin-form.finance-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-portal .product-admin-form .wide-field,
+  .admin-portal .product-admin-form > .mini-submit,
+  .admin-portal .product-admin-form > .portal-check {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 680px) {
+  .store-page #color-stylist.color-stylist {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 18px 16px;
+  }
+
+  .store-page .color-stylist-intro h2 {
+    margin: 6px 0 8px;
+    font-size: clamp(30px, 8vw, 40px);
+  }
+
+  .store-page .color-stylist-intro > p {
+    max-width: none;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .store-page .color-howto {
+    display: none;
+  }
+
+  .store-page .color-stylist-intro .color-stylist-tools {
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px;
+  }
+
+  .store-page .color-look-seasons,
+  .store-page .color-look-presets {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 3px;
+  }
+
+  .store-page .color-look-presets {
+    max-height: none;
+  }
+
+  .store-page .color-look-presets button,
+  .store-page .color-look-seasons button {
+    flex: 0 0 auto;
+  }
+
+  .store-page .color-stylist-intro .color-stylist-actions {
+    gap: 6px;
+  }
+
+  .store-page .color-stylist-intro .color-stylist-actions > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .store-page .color-stylist-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .store-page .color-model-card {
+    display: grid;
+    min-height: 0;
+    grid-template-columns: 76px minmax(0, 1fr);
+    align-items: center;
+    gap: 4px 10px;
+    padding: 10px 12px;
+  }
+
+  .store-page .color-model-heading {
+    grid-column: 1 / -1;
+    gap: 2px;
+  }
+
+  .store-page .color-model-heading > span:last-child {
+    font-size: 13px;
+  }
+
+  .store-page .color-model {
+    grid-column: 1;
+    grid-row: 2 / span 2;
+    width: 76px;
+    max-height: 112px;
+    margin: 0;
+  }
+
+  .store-page .model-color-labels {
+    grid-column: 2;
+    grid-row: 2 / span 2;
+    gap: 6px;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .store-page .model-color-labels > span {
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .store-page .color-guide-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 10px;
+    padding: 10px;
+  }
+
+  .store-page .color-guide-card > .section-kicker,
+  .store-page .color-guide-card > .color-combination,
+  .store-page .color-guide-card > .color-product-filters,
+  .store-page .color-guide-card > .color-results-group {
+    grid-column: 1 / -1;
+  }
+
+  .store-page .color-guide-card .color-choice-heading h3 {
+    font-size: 15px;
+  }
+
+  .store-page .color-guide-card .color-choice-group .color-swatches {
+    gap: 3px;
+  }
+
+  .store-page .color-guide-card .color-choice-group .base-color-option {
+    min-width: 43px;
+    flex-basis: 43px;
+    font-size: 8px;
+  }
+
+  .store-page .color-guide-card .matching-products {
+    flex-wrap: nowrap;
+  }
+}
+
+@media (max-width: 380px) {
+  .store-page .color-guide-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .store-page .color-guide-card > .section-kicker,
+  .store-page .color-guide-card > .color-choice-group,
+  .store-page .color-guide-card > .color-combination,
+  .store-page .color-guide-card > .color-product-filters,
+  .store-page .color-guide-card > .color-results-group {
+    grid-column: 1;
+  }
+}
+
