@@ -4027,7 +4027,7 @@ body.store-page {
   .fashion-video-header-label { font-size: 8px; }
   .fashion-video-card { width: 100%; border: 0; }
   .fashion-video-sound { top: 12px; right: 12px; }
-  .fashion-video-overlay { padding-right: 14px; padding-left: 14px; }
+  .fashion-video-overlay { right: 0; bottom: max(68px, calc(env(safe-area-inset-bottom) + 52px)); left: 0; gap: 8px; padding: 48px 14px 0; }
   .admin-portal .fashion-video-admin-card { grid-template-columns: 90px minmax(0, 1fr); gap: 10px; }
 }
 
@@ -4209,6 +4209,27 @@ body.portal-layout {
   .admin-portal .fashion-video-admin-card > video {
     width: min(100%, 260px);
     max-height: 220px;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-portal .fashion-video-upload-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .admin-portal .fashion-video-upload-form > label,
+  .admin-portal .fashion-video-upload-form > .wide-field,
+  .admin-portal .fashion-video-upload-form > .mini-submit {
+    min-width: 0;
+    grid-column: 1;
+  }
+
+  .admin-portal .fashion-video-upload-form input[type="file"] {
+    width: 100%;
+    min-width: 0;
+    font-size: 13px;
   }
 }
 

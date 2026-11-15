@@ -1,9 +1,11 @@
+using Amazon.S3;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.Models;
+using WebApplication1.Services;
 
 namespace WebApplication1.Controllers;
 
@@ -13,7 +15,8 @@ public sealed class AdminController(
     UserManager<ApplicationUser> userManager,
     IWebHostEnvironment environment,
     IConfiguration configuration,
-    ILogger<AdminController> logger) : Controller
+    ILogger<AdminController> logger,
+    ObjectMediaStorage objectStorage) : Controller
 {
     private string ProductImageDirectory => Path.Combine(
         configuration["Storage:PersistentPath"] ?? environment.WebRootPath,
@@ -229,7 +232,7 @@ public sealed class AdminController(
         }
         catch
         {
-            DeleteFashionVideoFile(fileName);
+            await DeleteFashionVideoFileAsync(fileName, CancellationToken.None);
             throw;
         }
 
@@ -265,7 +268,7 @@ public sealed class AdminController(
 
         database.FashionVideos.Remove(video);
         await database.SaveChangesAsync(HttpContext.RequestAborted);
-        DeleteFashionVideoFile(video.VideoFileName);
+        await DeleteFashionVideoFileAsync(video.VideoFileName, HttpContext.RequestAborted);
         TempData["Notice"] = "Video đã được xóa.";
         return RedirectToAction(nameof(Index), new { tab = "videos" });
     }
@@ -427,6 +430,14 @@ public sealed class AdminController(
     private async Task<string> SaveFashionVideoAsync(IFormFile videoFile, string extension, CancellationToken cancellationToken)
     {
         var fileName = $"{Guid.NewGuid():N}{extension}";
+        if (objectStorage.IsConfigured)
+        {
+            await using var uploadStream = videoFile.OpenReadStream();
+            var contentType = extension == ".webm" ? "video/webm" : "video/mp4";
+            await objectStorage.UploadAsync($"videos/fashion/{fileName}", uploadStream, videoFile.Length, contentType, cancellationToken);
+            return fileName;
+        }
+
         Directory.CreateDirectory(FashionVideoDirectory);
         var destination = Path.Combine(FashionVideoDirectory, fileName);
         try
@@ -437,12 +448,12 @@ public sealed class AdminController(
         }
         catch
         {
-            DeleteFashionVideoFile(fileName);
+            await DeleteFashionVideoFileAsync(fileName, cancellationToken);
             throw;
         }
     }
 
-    private void DeleteFashionVideoFile(string fileName)
+    private async Task DeleteFashionVideoFileAsync(string fileName, CancellationToken cancellationToken)
     {
         if (!System.Text.RegularExpressions.Regex.IsMatch(fileName, "^[a-f0-9]{32}\\.(mp4|webm)$"))
         {
@@ -451,7 +462,14 @@ public sealed class AdminController(
 
         try
         {
-            System.IO.File.Delete(Path.Combine(FashionVideoDirectory, fileName));
+            if (objectStorage.IsConfigured)
+            {
+                await objectStorage.DeleteAsync($"videos/fashion/{fileName}", cancellationToken);
+            }
+            else
+            {
+                System.IO.File.Delete(Path.Combine(FashionVideoDirectory, fileName));
+            }
         }
         catch (IOException exception)
         {
@@ -460,6 +478,10 @@ public sealed class AdminController(
         catch (UnauthorizedAccessException exception)
         {
             logger.LogWarning(exception, "Unable to remove fashion video file {VideoFileName}", fileName);
+        }
+        catch (AmazonS3Exception exception)
+        {
+            logger.LogWarning(exception, "Unable to remove fashion video object {VideoFileName}", fileName);
         }
     }
 

@@ -29,6 +29,7 @@ var databaseProvider = configuredProvider switch
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<SupportChatPresence>();
+builder.Services.AddSingleton<ObjectMediaStorage>();
 builder.Services.AddScoped<OrderNotificationService>();
 Action<DbContextOptionsBuilder> configureDatabase;
 if (databaseProvider == "sqlite")
@@ -160,14 +161,44 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 app.Logger.LogInformation("Using {DatabaseProvider} database", databaseProvider);
+var objectStorage = app.Services.GetRequiredService<ObjectMediaStorage>();
+app.Logger.LogInformation("Durable object storage is {ObjectStorageStatus}", objectStorage.IsConfigured ? "enabled" : "not configured; media uses local storage");
 var persistentStoragePath = app.Configuration["Storage:PersistentPath"];
 if (!string.IsNullOrWhiteSpace(persistentStoragePath))
 {
     Directory.CreateDirectory(Path.Combine(persistentStoragePath, "images", "uploads"));
     Directory.CreateDirectory(Path.Combine(persistentStoragePath, "images", "avatars"));
-    Directory.CreateDirectory(Path.Combine(persistentStoragePath, "videos", "fashion"));
+    if (!objectStorage.IsConfigured)
+    {
+        Directory.CreateDirectory(Path.Combine(persistentStoragePath, "videos", "fashion"));
+    }
 }
 await DatabaseSeeder.InitializeAsync(app.Services, app.Configuration, app.Logger);
+if (objectStorage.IsConfigured && !string.IsNullOrWhiteSpace(persistentStoragePath))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var database = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var existingVideos = await database.FashionVideos.AsNoTracking().ToListAsync(app.Lifetime.ApplicationStopping);
+    var migratedVideos = 0;
+    foreach (var video in existingVideos)
+    {
+        var localPath = Path.Combine(persistentStoragePath, "videos", "fashion", video.VideoFileName);
+        if (!File.Exists(localPath) || await objectStorage.ExistsAsync($"videos/fashion/{video.VideoFileName}", app.Lifetime.ApplicationStopping))
+        {
+            continue;
+        }
+
+        await using var videoStream = File.OpenRead(localPath);
+        var contentType = video.VideoFileName.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) ? "video/webm" : "video/mp4";
+        await objectStorage.UploadAsync($"videos/fashion/{video.VideoFileName}", videoStream, videoStream.Length, contentType, app.Lifetime.ApplicationStopping);
+        migratedVideos++;
+    }
+
+    if (migratedVideos > 0)
+    {
+        app.Logger.LogInformation("Migrated {VideoCount} existing fashion videos to durable object storage", migratedVideos);
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -202,12 +233,15 @@ if (!string.IsNullOrWhiteSpace(persistentStoragePath))
         RequestPath = "/images/avatars",
         ContentTypeProvider = staticFileTypes
     });
-    app.UseStaticFiles(new StaticFileOptions
+    if (!objectStorage.IsConfigured)
     {
-        FileProvider = new PhysicalFileProvider(fashionVideosPath),
-        RequestPath = "/videos/fashion",
-        ContentTypeProvider = staticFileTypes
-    });
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(fashionVideosPath),
+            RequestPath = "/videos/fashion",
+            ContentTypeProvider = staticFileTypes
+        });
+    }
 }
 app.UseRouting();
 app.UseRateLimiter();

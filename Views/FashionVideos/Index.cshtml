@@ -32,11 +32,11 @@
                 @foreach (var video in Model)
                 {
                     <article class="fashion-video-card">
-                        <video class="fashion-video-player" controls muted loop playsinline preload="none" aria-label="Video @video.Caption">
+                        <video class="fashion-video-player" controls loop playsinline preload="none" aria-label="Video @video.Caption">
                             <source src="@Url.Content($"~/videos/fashion/{video.VideoFileName}")" type="@(video.VideoFileName.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) ? "video/webm" : "video/mp4")" />
                             Trình duyệt của bạn không hỗ trợ phát video.
                         </video>
-                        <button class="fashion-video-sound" type="button" data-video-sound aria-label="Bật tiếng video" aria-pressed="false">BẬT TIẾNG</button>
+                        <button class="fashion-video-sound" type="button" data-video-sound aria-label="Tắt tiếng video" aria-pressed="true">TẮT TIẾNG</button>
                         <div class="fashion-video-overlay">
                             <span class="fashion-video-caption">@video.Caption</span>
                             <a class="fashion-video-product" href="@Url.Action("Index", "Home", new { product = video.ProductSlug })">

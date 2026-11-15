@@ -30,6 +30,12 @@
 - Định kỳ thử khôi phục database cùng ảnh upload vào môi trường riêng để `ImageId`/`AvatarImageId` không trỏ tới file thiếu.
 - Không đặt file backup trong `wwwroot` hoặc một thư mục được phục vụ công khai.
 
+## Lưu video trên object storage
+
+- Video thời trang có thể lưu trong bucket S3-compatible riêng tư thay vì ổ đĩa tạm của Render. Tạo bucket và API token có quyền đọc/ghi object tại nhà cung cấp (ví dụ Cloudflare R2), sau đó đặt các biến môi trường Render: `Storage__S3__Endpoint` (HTTPS endpoint), `Storage__S3__Bucket`, `Storage__S3__AccessKey`, và `Storage__S3__SecretKey`. Với R2, endpoint thường là `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`, vùng ký mặc định là `auto` (`Storage__S3__Region`). Không bật public access cho bucket; ứng dụng stream video qua endpoint có kiểm tra tên file và hỗ trợ HTTP Range để tua video. `render.yaml` khai báo bốn biến này để nhập dưới dạng secrets/config trong Render.
+- Nếu thiếu bất kỳ biến bắt buộc nào, ứng dụng dùng local storage; nếu chỉ cấu hình một phần, ứng dụng dừng khởi động để tránh lưu file nhầm nơi. Sau khi cấu hình đủ, deploy lại rồi kiểm tra log `Durable object storage is enabled`. Video mới tải lên sẽ vào bucket. Video cũ chỉ được giữ nếu tệp local vẫn còn trên máy chủ cũ; nếu đã mất, cần tải bản gốc lên lại.
+- Cấu hình này hiện áp dụng cho video fashion. Ảnh sản phẩm, ảnh đại diện và video yêu cầu trả hàng vẫn dùng local storage và có thể mất khi Render thay máy chủ.
+
 ## Kiểm tra trước khi phát hành
 
 - Xác nhận tài khoản admin/nhân viên/khách hàng đúng vai trò; các action thay đổi dữ liệu phải tiếp tục có `[Authorize]` theo vai trò và antiforgery.

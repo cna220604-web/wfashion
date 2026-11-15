@@ -17,6 +17,14 @@ services:
         sync: false
       - key: Storage__PersistentPath
         value: /var/data
+      - key: Storage__S3__Endpoint
+        sync: false
+      - key: Storage__S3__Bucket
+        sync: false
+      - key: Storage__S3__AccessKey
+        sync: false
+      - key: Storage__S3__SecretKey
+        sync: false
       - key: Ai__Model
         value: gemini-3-flash-preview
       - key: Ai__ApiKey

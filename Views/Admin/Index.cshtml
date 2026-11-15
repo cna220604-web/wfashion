@@ -102,7 +102,7 @@
     else if (tab == "videos")
     {
         <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">VIDEO FASHION · ĐĂNG VIDEO</span><h2>Thêm video outfit</h2></div><span class="panel-count">MP4 / WebM · tối đa 100 MB</span></div>
-            <p class="panel-help">Mỗi video phải gắn với một sản phẩm đang bán. Khách xem trong trang Video fashion riêng và có thể mở sản phẩm để mua. Video được lưu cùng vùng lưu trữ của cửa hàng.</p>
+            <p class="panel-help">Mỗi video phải gắn với một sản phẩm đang bán. Khách xem trong trang Video fashion riêng và có thể mở sản phẩm để mua. Khi đã cấu hình object storage, video được lưu bền vững ngoài máy chủ Render.</p>
             <form asp-action="UploadFashionVideo" method="post" enctype="multipart/form-data" class="product-admin-form fashion-video-upload-form">
                 <label>Sản phẩm<select name="ProductSlug" class="portal-select" required><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products.Where(product => product.IsActive)) { <option value="@product.Slug">@product.Name · @product.Price.ToString("N0")₫</option> }</select></label>
                 <label class="wide-field">Chú thích video<input name="Caption" class="portal-input" maxlength="180" placeholder="Ví dụ: Outfit linen cho ngày nắng" required /></label>
