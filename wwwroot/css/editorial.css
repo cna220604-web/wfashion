@@ -3967,6 +3967,38 @@ body.store-page {
   }
 }
 
+.store-page .store-nav a[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+.store-page .store-nav a[aria-current="page"] {
+  color: var(--studio-gold);
+}
+.store-page-stylist .store-hero,
+.store-page-stylist #season-studio,
+.store-page-stylist #collection,
+.store-page-stylist .stylist-banner,
+.store-page-season .store-hero,
+.store-page-season #color-stylist,
+.store-page-season #collection,
+.store-page-season .stylist-banner,
+.store-page-shop #season-studio,
+.store-page-shop #color-stylist,
+.store-page-shop .stylist-banner {
+  display: none !important;
+}
+.store-page-stylist .header-actions .search-box,
+.store-page-season .header-actions .search-box {
+  display: none;
+}
+.store-page-stylist #color-stylist,
+.store-page-season #season-studio,
+.store-page-shop #collection {
+  min-height: calc(100dvh - 130px);
+}
+.store-page-season #season-studio {
+  padding-top: clamp(24px, 3vw, 46px) !important;
+}
+
 .fashion-video-page {
   display: flex;
   width: 100%;

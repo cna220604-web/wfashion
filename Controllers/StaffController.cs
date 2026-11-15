@@ -18,6 +18,12 @@ public sealed class StaffController(
     IConfiguration configuration) : Controller
 {
     private const string ReturnRequestedFilter = "ReturnRequested";
+    private static string NormalizeDashboardTab(string? tab) =>
+        tab is "support" or "orders" or "stock" or "feedback" ? tab : "overview";
+
+    private IActionResult RedirectToDashboard(string? tab) =>
+        RedirectToAction(nameof(Index), new { tab = NormalizeDashboardTab(tab) });
+
     private string ReturnVideoDirectory => Path.Combine(
         configuration["Storage:PersistentPath"] ?? environment.ContentRootPath,
         "private",
@@ -124,12 +130,12 @@ public sealed class StaffController(
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ReplyToProductReview(ProductReviewReplyViewModel model, CancellationToken cancellationToken)
+    public async Task<IActionResult> ReplyToProductReview(ProductReviewReplyViewModel model, string? tab, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Phản hồi cần có nội dung và không được vượt quá 1.000 ký tự.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToDashboard(tab);
         }
 
         var review = await database.ProductReviews.FirstOrDefaultAsync(item => item.Id == model.ReviewId, cancellationToken);
@@ -150,12 +156,12 @@ public sealed class StaffController(
         await database.SaveChangesAsync(cancellationToken);
 
         TempData["Notice"] = "Đã gửi phản hồi cho khách hàng.";
-        return RedirectToAction(nameof(Index));
+        return RedirectToDashboard(tab);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateOrderStatus(int id, string status)
+    public async Task<IActionResult> UpdateOrderStatus(int id, string status, string? tab)
     {
         var order = await database.Orders.Include(item => item.Items).FirstOrDefaultAsync(item => item.Id == id);
         if (order is null)
@@ -173,7 +179,7 @@ public sealed class StaffController(
         if (!allowed.Contains(status, StringComparer.Ordinal))
         {
             TempData["Error"] = "Không thể chuyển đơn hàng sang trạng thái đã chọn.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToDashboard(tab);
         }
 
         await using var transaction = await database.Database.BeginTransactionAsync();
@@ -195,17 +201,17 @@ public sealed class StaffController(
         var customer = await userManager.FindByIdAsync(order.UserId);
         await notifications.NotifyOrderStatusChangedAsync(order, customer?.Email, CancellationToken.None);
         TempData["Notice"] = "Trạng thái đơn hàng đã được cập nhật.";
-        return RedirectToAction(nameof(Index));
+        return RedirectToDashboard(tab);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateStock(string slug, int stock)
+    public async Task<IActionResult> UpdateStock(string slug, int stock, string? tab)
     {
         if (stock is < 0 or > 100000)
         {
             TempData["Error"] = "Tồn kho phải nằm trong khoảng 0–100.000.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToDashboard(tab);
         }
 
         var product = await database.Products.FirstOrDefaultAsync(item => item.Slug == slug);
@@ -217,6 +223,6 @@ public sealed class StaffController(
         product.Stock = stock;
         await database.SaveChangesAsync();
         TempData["Notice"] = "Tồn kho đã được cập nhật.";
-        return RedirectToAction(nameof(Index));
+        return RedirectToDashboard(tab);
     }
 }

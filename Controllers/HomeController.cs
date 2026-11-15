@@ -9,7 +9,15 @@ namespace WebApplication1.Controllers
 {
     public class HomeController(ApplicationDbContext database, UserManager<ApplicationUser> userManager) : Controller
     {
-        public async Task<IActionResult> Index()
+        public Task<IActionResult> Index() => RenderStorePageAsync("shop");
+
+        public Task<IActionResult> Shop() => RenderStorePageAsync("shop");
+
+        public Task<IActionResult> Stylist() => RenderStorePageAsync("stylist");
+
+        public Task<IActionResult> Season() => RenderStorePageAsync("season");
+
+        private async Task<IActionResult> RenderStorePageAsync(string page)
         {
             var products = await database.Products.AsNoTracking()
                 .Where(product => product.IsActive)
@@ -30,7 +38,14 @@ namespace WebApplication1.Controllers
                     summary => summary.ProductSlug,
                     summary => new ProductReviewSummary(summary.AverageRating, summary.ReviewCount));
             var customer = User.IsInRole(AppRoles.Customer) ? await userManager.GetUserAsync(User) : null;
-            return View(new StorefrontViewModel
+            ViewData["StorePage"] = page;
+            ViewData["Title"] = page switch
+            {
+                "stylist" => "Phối đồ theo màu",
+                "season" => "Gợi ý theo mùa",
+                _ => "Mua sắm"
+            };
+            return View("Index", new StorefrontViewModel
             {
                 Products = products,
                 Reviews = reviewSummaries,

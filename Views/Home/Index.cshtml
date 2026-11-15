@@ -19,6 +19,7 @@
             : new ProductReviewSummary(0, 0)
     });
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var storePage = ViewData["StorePage"] as string ?? "shop";
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -35,15 +36,14 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/editorial.css" asp-append-version="true" />
 </head>
-<body class="store-page">
+<body class="store-page store-page-@storePage">
     <div class="announcement-bar">BỘ SƯU TẬP MỚI ĐÃ CÓ MẶT <span>—</span> PHONG CÁCH CỦA RIÊNG BẠN</div>
     <header class="store-header">
-        <a class="store-logo" href="#home" aria-label="WebApplication1 Studio - Trang chủ">W<span>STUDIO</span></a>
-        <nav class="store-nav" aria-label="Danh mục sản phẩm">
-            <a href="#collection" data-nav-category="all">Tất cả</a>
-            <a href="#collection" data-nav-category="women">Nữ</a>
-            <a href="#collection" data-nav-category="men">Nam</a>
-            <a href="#collection" data-nav-category="accessories">Phụ kiện</a>
+        <a class="store-logo" asp-controller="Home" asp-action="Shop" aria-label="W Studio - Mua sắm">W<span>STUDIO</span></a>
+        <nav class="store-nav" aria-label="Điều hướng cửa hàng">
+            <a asp-controller="Home" asp-action="Shop" aria-current="@(storePage == "shop" ? "page" : null)">Mua sắm</a>
+            <a asp-controller="Home" asp-action="Stylist" aria-current="@(storePage == "stylist" ? "page" : null)">Phối đồ</a>
+            <a asp-controller="Home" asp-action="Season" aria-current="@(storePage == "season" ? "page" : null)">Gợi ý theo mùa</a>
             <a asp-controller="FashionVideos" asp-action="Index">Video fashion</a>
         </nav>
         <div class="header-actions">
@@ -70,9 +70,9 @@
                 <h1 id="hero-heading">Mặc điều<br />bạn <em>cảm thấy.</em></h1>
                 <p>Những thiết kế có chủ đích. Những món đồ kể câu chuyện của riêng bạn.</p>
                 <nav class="hero-links" aria-label="Khám phá phong cách">
-                    <a class="text-link" href="#collection">Khám phá bộ sưu tập <span aria-hidden="true">↗</span></a>
-                    <a class="text-link hero-tool-link" href="#color-stylist">Phối đồ <span aria-hidden="true">↗</span></a>
-                    <a class="text-link hero-tool-link" href="#season-studio">Gợi ý đồ theo mùa <span aria-hidden="true">↗</span></a>
+                    <a class="text-link" asp-controller="Home" asp-action="Shop">Mua sắm <span aria-hidden="true">↗</span></a>
+                    <a class="text-link hero-tool-link" asp-controller="Home" asp-action="Stylist">Phối đồ <span aria-hidden="true">↗</span></a>
+                    <a class="text-link hero-tool-link" asp-controller="Home" asp-action="Season">Gợi ý theo mùa <span aria-hidden="true">↗</span></a>
                 </nav>
             </div>
             <div class="hero-art" role="img" aria-label="Ảnh thời trang bộ sưu tập mùa mới">

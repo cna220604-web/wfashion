@@ -18,7 +18,9 @@
     <header class="portal-header">
         <a class="portal-brand" asp-controller="Home" asp-action="Index">W <span>STUDIO</span></a>
         <nav class="portal-nav" aria-label="Điều hướng">
-            <a asp-controller="Home" asp-action="Index">Cửa hàng</a>
+            <a asp-controller="Home" asp-action="Shop">Mua sắm</a>
+            <a asp-controller="Home" asp-action="Stylist">Phối đồ</a>
+            <a asp-controller="Home" asp-action="Season">Gợi ý theo mùa</a>
             <a asp-controller="FashionVideos" asp-action="Index">Video fashion</a>
             @if (User.Identity?.IsAuthenticated == true)
             {
