@@ -2812,8 +2812,15 @@ body.store-page {
 .store-page .demo-disclaimer,
 .store-page .empty-products { color: rgb(248 241 233 / 74%); }
 .store-page .sort-control select {
-  border-bottom-color: rgb(248 241 233 / 48%);
-  color: var(--studio-light);
+  border: 1px solid rgb(215 180 133 / 56%);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #302725;
+  background-color: #f1e5d5;
+}
+.store-page .sort-control select option {
+  color: #302725;
+  background-color: #fffaf3;
 }
 .store-page .category-tabs { border-bottom-color: rgb(248 241 233 / 30%); }
 .store-page .category-tab { color: rgb(248 241 233 / 68%) !important; }
@@ -2841,6 +2848,8 @@ body.store-page {
   border-color: rgb(215 180 133 / 85%);
   box-shadow: 0 22px 48px rgb(83 53 54 / 20%);
 }
+.store-page #product-grid .product-card,
+.store-page #empty-products { scroll-margin-top: 100px; }
 .store-page .product-name { color: #302725 !important; }
 .store-page .product-meta > span,
 .store-page .product-rating > span { color: rgb(48 39 37 / 70%); }
@@ -3986,8 +3995,11 @@ body.store-page {
 .fashion-video-main { display: grid; min-height: 0; flex: 1 1 auto; place-items: center; }
 .fashion-video-feed { display: grid; width: 100%; height: 100%; grid-auto-rows: 100%; justify-items: center; gap: 0; overflow-y: auto; overscroll-behavior-y: contain; scroll-snap-type: y mandatory; scrollbar-width: none; }
 .fashion-video-feed::-webkit-scrollbar { display: none; }
-.fashion-video-card { position: relative; width: min(100%, 460px); height: 100%; min-height: 0; flex: 0 0 100%; overflow: hidden; border-right: 1px solid rgb(215 180 133 / 16%); border-left: 1px solid rgb(215 180 133 / 16%); background: #171312; scroll-snap-align: start; scroll-snap-stop: always; }
-.fashion-video-player { display: block; width: 100%; height: 100%; object-fit: cover; background: #171312; }
+.fashion-video-card { position: relative; width: min(100%, 1100px); height: 100%; min-height: 0; flex: 0 0 100%; overflow: hidden; border-right: 1px solid rgb(215 180 133 / 16%); border-left: 1px solid rgb(215 180 133 / 16%); background: #171312; scroll-snap-align: start; scroll-snap-stop: always; }
+.fashion-video-card.is-portrait { width: min(100%, 460px); }
+.fashion-video-player { display: block; width: 100%; height: 100%; object-fit: contain; background: #171312; }
+.fashion-video-sound { position: absolute; z-index: 1; top: 16px; right: 16px; min-height: 40px; padding: 0 13px; border: 1px solid rgb(255 255 255 / 48%); border-radius: 999px; color: #fff; background: rgb(25 20 18 / 72%); font-size: 11px; font-weight: 700; letter-spacing: .06em; cursor: pointer; backdrop-filter: blur(8px); }
+.fashion-video-sound:hover { border-color: #d7b485; background: rgb(25 20 18 / 90%); }
 .fashion-video-overlay { position: absolute; right: 0; bottom: 0; left: 0; display: grid; gap: 12px; padding: 80px 18px max(22px, env(safe-area-inset-bottom)); background: linear-gradient(transparent, rgb(17 13 12 / 88%)); pointer-events: none; }
 .fashion-video-caption { color: #fff; font-size: 15px; font-weight: 600; line-height: 1.45; text-shadow: 0 1px 5px rgb(0 0 0 / 55%); }
 .fashion-video-product { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid rgb(215 180 133 / 38%); border-radius: 13px; color: #302725; background: #f1e5d5; text-align: left; text-decoration: none; pointer-events: auto; }
@@ -4000,7 +4012,7 @@ body.store-page {
 .fashion-video-empty a { color: #d7b485; }
 .admin-portal .fashion-video-admin-list { display: grid; gap: 12px; }
 .admin-portal .fashion-video-admin-card { display: grid; grid-template-columns: minmax(110px, 180px) minmax(0, 1fr); align-items: center; gap: 16px; padding: 12px; border: 1px solid rgb(119 60 61 / 12%); border-radius: 14px; background: #fffaf3; }
-.admin-portal .fashion-video-admin-card > video { width: 100%; max-height: 260px; aspect-ratio: 9 / 16; border-radius: 9px; background: #211b19; object-fit: cover; }
+.admin-portal .fashion-video-admin-card > video { width: 100%; max-height: 260px; border-radius: 9px; background: #211b19; object-fit: contain; }
 .admin-portal .fashion-video-admin-card p { margin: 7px 0; color: #62594f; }
 .admin-portal .fashion-video-admin-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
 .admin-portal .fashion-video-admin-actions form { margin: 0; }
@@ -4014,6 +4026,7 @@ body.store-page {
   .fashion-video-brand { font-size: 21px; }
   .fashion-video-header-label { font-size: 8px; }
   .fashion-video-card { width: 100%; border: 0; }
+  .fashion-video-sound { top: 12px; right: 12px; }
   .fashion-video-overlay { padding-right: 14px; padding-left: 14px; }
   .admin-portal .fashion-video-admin-card { grid-template-columns: 90px minmax(0, 1fr); gap: 10px; }
 }

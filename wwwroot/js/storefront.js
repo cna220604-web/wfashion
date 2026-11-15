@@ -776,7 +776,24 @@ document.querySelectorAll('[data-nav-category]').forEach(link => link.addEventLi
     const activeTab = document.querySelector(`.category-tab[data-category="${selectedCategory}"]`);
     if (activeTab) activeTab.click();
 }));
-document.getElementById('search-input').addEventListener('input', () => { resetProductPage(); renderProducts(); });
+const searchInput = document.getElementById('search-input');
+let catalogSearchScrollTimer;
+const scrollToCatalogResults = () => {
+    const target = document.querySelector('#product-grid .product-card') || document.getElementById('empty-products');
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+searchInput.addEventListener('input', () => {
+    resetProductPage();
+    renderProducts();
+    clearTimeout(catalogSearchScrollTimer);
+    if (!searchInput.value.trim()) return;
+    catalogSearchScrollTimer = setTimeout(scrollToCatalogResults, 500);
+});
+searchInput.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' || !searchInput.value.trim()) return;
+    clearTimeout(catalogSearchScrollTimer);
+    scrollToCatalogResults();
+});
 ['color-filter', 'size-filter', 'price-filter'].forEach(id => document.getElementById(id).addEventListener('change', () => { resetProductPage(); renderProducts(); }));
 document.getElementById('sort-select').addEventListener('change', () => { resetProductPage(); renderProducts(); });
 document.getElementById('product-grid').addEventListener('click', event => {
