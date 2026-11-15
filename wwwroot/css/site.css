@@ -3021,7 +3021,7 @@ body {
 
 .product-edit-form {
   display: grid;
-  min-width: 320px;
+  min-width: 0;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin: 10px 0;

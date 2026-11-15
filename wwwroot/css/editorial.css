@@ -3911,6 +3911,39 @@ body.store-page {
   }
 }
 
+@media (max-width: 760px) {
+  html {
+    overflow-x: clip;
+  }
+
+  body.store-page,
+  body.portal-layout {
+    width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  .store-page .store-header,
+  .store-page .store-hero,
+  .store-page .color-stylist,
+  .store-page .season-studio,
+  .store-page .collection-section,
+  .store-page .stylist-banner,
+  .store-page .store-footer {
+    max-width: 100%;
+  }
+
+  .store-page .product-dialog,
+  .store-page .chat-panel.is-expanded {
+    width: calc(100% - 20px);
+    max-width: calc(100% - 20px);
+  }
+
+  .store-page .product-edit-form {
+    min-width: 0;
+  }
+}
+
 @media (max-width: 380px) {
   .store-page .color-guide-card {
     grid-template-columns: minmax(0, 1fr);
