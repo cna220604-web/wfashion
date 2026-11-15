@@ -1,0 +1,61 @@
+@model CustomerOrder
+@{
+    ViewData["Title"] = $"Chi tiết đơn hàng #{Model.Id:D6}";
+    var statusLabel = Model.Status switch
+    {
+        OrderStatuses.Pending => "Chờ xác nhận",
+        OrderStatuses.Processing => "Đang xử lý",
+        OrderStatuses.Shipped => "Đang giao",
+        OrderStatuses.Delivered => "Đã giao",
+        OrderStatuses.Cancelled => "Đã hủy",
+        _ => Model.Status
+    };
+}
+<section class="dashboard-page">
+    <a asp-action="Index" class="text-action">← Quay lại danh sách đơn</a>
+    <div class="dashboard-heading">
+        <div><span class="portal-kicker">CHI TIẾT ĐƠN HÀNG</span><h1>Đơn #@Model.Id.ToString("D6")</h1><p>Đặt lúc @Model.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p></div>
+        <span class="status-pill status-@Model.Status.ToLowerInvariant()">@statusLabel</span>
+    </div>
+
+    <section class="portal-panel management-panel">
+        <div class="panel-heading"><div><span class="portal-kicker">NGƯỜI NHẬN</span><h2>Thông tin giao hàng</h2></div></div>
+        <dl class="order-detail-list">
+            <div><dt>Khách hàng</dt><dd>@Model.CustomerName</dd></div>
+            <div><dt>Số điện thoại</dt><dd><a href="tel:@Model.Phone">@Model.Phone</a></dd></div>
+            <div><dt>Địa chỉ</dt><dd>@Model.Address</dd></div>
+            <div><dt>Ghi chú</dt><dd>@(string.IsNullOrWhiteSpace(Model.Note) ? "Không có" : Model.Note)</dd></div>
+            <div><dt>Thanh toán</dt><dd>@Model.PaymentMethod</dd></div>
+        </dl>
+    </section>
+
+    @if (Model.ReturnRequestedAtUtc is not null)
+    {
+        <section class="portal-panel management-panel staff-return-request">
+            <div class="panel-heading"><div><span class="portal-kicker">KHÁCH GỬI · @Model.ReturnRequestedAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span><h2>Yêu cầu hoàn trả</h2></div></div>
+            <p><strong>Lý do:</strong> @Model.ReturnReason</p>
+            @if (Model.ReturnVideoId is not null)
+            {
+                <a asp-action="ReturnVideo" asp-route-id="@Model.Id" class="portal-outline-link" target="_blank" rel="noopener">Xem video khách tải lên ↗</a>
+            }
+        </section>
+    }
+
+    <section class="portal-panel management-panel">
+        <div class="panel-heading"><div><span class="portal-kicker">SẢN PHẨM</span><h2>Các mặt hàng trong đơn</h2></div><span class="panel-count">@Model.Items.Sum(item => item.Quantity) sản phẩm</span></div>
+        <div class="table-scroll"><table class="management-table">
+            <thead><tr><th>Sản phẩm</th><th>Kích cỡ</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr><td>@item.ProductName<small>@item.ProductSlug</small></td><td>@item.Size</td><td>@item.UnitPrice.ToString("N0")₫</td><td>@item.Quantity</td><td>@((item.UnitPrice * item.Quantity).ToString("N0"))₫</td></tr>
+            }
+            </tbody>
+        </table></div>
+        <dl class="order-detail-totals">
+            <div><dt>Tạm tính</dt><dd>@Model.Subtotal.ToString("N0")₫</dd></div>
+            <div><dt>Phí giao hàng</dt><dd>@(Model.ShippingFee == 0 ? "Miễn phí" : $"{Model.ShippingFee:N0}₫")</dd></div>
+            <div class="order-detail-total"><dt>Tổng thanh toán</dt><dd>@Model.Total.ToString("N0")₫</dd></div>
+        </dl>
+    </section>
+</section>

@@ -1,0 +1,177 @@
+@model CustomerDashboardViewModel
+@{
+    ViewData["Title"] = "Tài khoản của tôi";
+    var profileEditMode = ViewData["ProfileEditMode"] as bool? == true;
+}
+<section class="dashboard-page">
+    <div class="dashboard-heading">
+        <div><span class="portal-kicker">KHÔNG GIAN CỦA BẠN</span><h1>Xin chào, @Model.Profile.DisplayName</h1><p>Quản lý thông tin cá nhân và theo dõi các đơn hàng.</p></div>
+        <a class="portal-outline-link" asp-controller="Home" asp-action="Index">Tiếp tục mua sắm ↗</a>
+    </div>
+    @if (TempData["Notice"] is string notice) { <div class="portal-alert success">@notice</div> }
+    @if (TempData["Error"] is string error) { <div class="portal-alert danger">@error</div> }
+    <div class="customer-dashboard-grid">
+        <section class="portal-panel profile-panel">
+            <span class="portal-kicker">HỒ SƠ</span><h2>Thông tin cá nhân</h2>
+            <form asp-action="UpdateProfile" method="post" enctype="multipart/form-data" class="portal-form" data-profile-form data-editing="@profileEditMode.ToString().ToLowerInvariant()">
+                <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+                <fieldset class="profile-edit-fields" data-profile-fields disabled="@(!profileEditMode)">
+                    <div class="profile-avatar-row">
+                        <button class="profile-avatar-button" type="button" data-avatar-trigger aria-label="Chọn ảnh đại diện">
+                        @if (!string.IsNullOrWhiteSpace(Model.Profile.AvatarImageId))
+                        {
+                            <img class="profile-avatar" data-avatar-preview src="~/images/@Model.Profile.AvatarImageId" alt="Ảnh đại diện của @Model.Profile.DisplayName" />
+                        }
+                        else
+                        {
+                            <span class="profile-avatar profile-avatar-placeholder" data-avatar-preview aria-hidden="true">@(string.IsNullOrWhiteSpace(Model.Profile.DisplayName) ? "W" : Model.Profile.DisplayName.Trim()[0].ToString().ToUpperInvariant())</span>
+                        }
+                        <span class="profile-avatar-edit" aria-hidden="true">✎</span>
+                    </button>
+                    <div class="profile-avatar-copy">
+                        <strong>Ảnh đại diện</strong>
+                        <small>Bấm vào ảnh để chọn ảnh mới</small>
+                        <small>JPEG, PNG, WebP hoặc GIF · tối đa 10 MB</small>
+                        <input asp-for="Profile.AvatarFile" class="visually-hidden" data-avatar-input type="file" accept="image/jpeg,image/png,image/webp,image/gif" tabindex="-1" />
+                        <span asp-validation-for="Profile.AvatarFile" class="field-error"></span>
+                    </div>
+                    </div>
+                    <label asp-for="Profile.DisplayName"></label><input asp-for="Profile.DisplayName" class="portal-input" autocomplete="name" /><span asp-validation-for="Profile.DisplayName" class="field-error"></span>
+                    <label asp-for="Profile.PhoneNumber"></label><input asp-for="Profile.PhoneNumber" class="portal-input" autocomplete="tel" /><span asp-validation-for="Profile.PhoneNumber" class="field-error"></span>
+                    <label asp-for="Profile.Gender"></label>
+                    <select asp-for="Profile.Gender" class="portal-select">
+                        <option value="">Chọn giới tính</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                        <option value="Khác">Khác</option>
+                        <option value="Không muốn chia sẻ">Không muốn chia sẻ</option>
+                    </select>
+                    <span asp-validation-for="Profile.Gender" class="field-error"></span>
+                    <label asp-for="Profile.Address"></label><input asp-for="Profile.Address" class="portal-input" autocomplete="street-address" maxlength="240" />
+                    <span asp-validation-for="Profile.Address" class="field-error"></span>
+                    <fieldset class="phone-privacy-fieldset">
+                        <legend>Quyền riêng tư số điện thoại</legend>
+                        <label class="phone-privacy-option"><input asp-for="Profile.PhoneNumberIsPublic" type="radio" value="false" /> Chỉ mình tôi</label>
+                        <label class="phone-privacy-option"><input asp-for="Profile.PhoneNumberIsPublic" type="radio" value="true" /> Công khai trên hồ sơ</label>
+                        <small>Lựa chọn được lưu cùng hồ sơ. Hiện cửa hàng chưa có trang hồ sơ công khai nên số điện thoại không hiển thị cho khách khác; nhân viên vẫn có thể dùng số để xử lý đơn hàng.</small>
+                    </fieldset>
+                </fieldset>
+                <button class="portal-outline-link profile-edit-button" type="button" data-profile-edit hidden="@profileEditMode">CẬP NHẬT HỒ SƠ</button>
+                <div class="profile-form-actions" data-profile-actions hidden="@(!profileEditMode)">
+                    <button class="portal-submit" type="submit">LƯU HỒ SƠ <span>→</span></button>
+                    <button class="profile-cancel-button" type="button" data-profile-cancel>HỦY</button>
+                </div>
+            </form>
+        </section>
+        <section class="portal-panel orders-panel">
+            <span class="portal-kicker">LỊCH SỬ MUA SẮM</span><h2>Đơn hàng của tôi</h2>
+            @if (Model.Orders.Count == 0)
+            {
+                <div class="empty-orders">Bạn chưa có đơn hàng nào. <a asp-controller="Home" asp-action="Index">Khám phá bộ sưu tập</a></div>
+            }
+            else
+            {
+                <div class="order-list">
+                    @foreach (var order in Model.Orders)
+                    {
+                        <article class="order-card">
+                            <div class="order-card-head"><div><strong>Đơn #@order.Id.ToString("D6")</strong><span>@order.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span></div><span class="status-pill status-@order.Status.ToLowerInvariant()">@OrderStatusText(order.Status)</span></div>
+                            <div class="order-lines">
+                                @{ var reviewedProducts = new HashSet<string>(StringComparer.Ordinal); }
+                                @foreach (var item in order.Items)
+                                {
+                                    <div class="order-line-review">
+                                        <span>@item.ProductName · @item.Size × @item.Quantity</span><strong>@((item.UnitPrice * item.Quantity).ToString("N0"))₫</strong>
+                                        @if (order.Status == OrderStatuses.Delivered && reviewedProducts.Add(item.ProductSlug))
+                                        {
+                                            var reviewKey = CustomerDashboardViewModel.ReviewKey(order.Id, item.ProductSlug);
+                                            if (Model.ProductReviews.TryGetValue(reviewKey, out var review))
+                                            {
+                                                <div class="customer-review-saved"><span class="review-stars" aria-label="@review.Rating trên 5 sao">@string.Concat(Enumerable.Repeat("★", review.Rating))@string.Concat(Enumerable.Repeat("☆", 5 - review.Rating))</span><span>Đã đánh giá</span>@if (!string.IsNullOrWhiteSpace(review.Comment)) { <p>@review.Comment</p> }@if (!string.IsNullOrWhiteSpace(review.StaffReply)) { <div class="customer-review-reply"><strong>Phản hồi từ W Studio · @review.StaffReplyBy</strong><span>@review.StaffRepliedAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span><p>@review.StaffReply</p></div> }</div>
+                                            }
+                                            else
+                                            {
+                                                <form asp-controller="ProductReviews" asp-action="Create" method="post" class="customer-review-form">
+                                                    <input type="hidden" name="OrderId" value="@order.Id" />
+                                                    <input type="hidden" name="ProductSlug" value="@item.ProductSlug" />
+                                                    <label>Đánh giá sản phẩm
+                                                        <select name="Rating" class="portal-select" required aria-label="Số sao cho @item.ProductName"><option value="">Chọn sao</option><option value="5">★★★★★ · Rất hài lòng</option><option value="4">★★★★ · Hài lòng</option><option value="3">★★★ · Bình thường</option><option value="2">★★ · Chưa hài lòng</option><option value="1">★ · Không hài lòng</option></select>
+                                                    </label>
+                                                    <label>Chia sẻ cảm nhận (không bắt buộc)<textarea name="Comment" class="portal-input" maxlength="1000" rows="2" placeholder="Chất liệu, phom dáng, trải nghiệm..."></textarea></label>
+                                                    <button type="submit" class="mini-submit">GỬI ĐÁNH GIÁ</button>
+                                                </form>
+                                            }
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            <div class="order-card-foot"><span>COD · @order.Address</span><strong>@order.Total.ToString("N0")₫</strong></div>
+                            @if (order.Status == OrderStatuses.Shipped)
+                            {
+                                <form asp-controller="Orders" asp-action="ConfirmReceived" asp-route-id="@order.Id" method="post" class="order-confirm-received-form">
+                                    <button type="submit" class="mini-submit">ĐÃ NHẬN ĐƯỢC HÀNG</button>
+                                </form>
+                            }
+                            @if (order.Status == OrderStatuses.Delivered && order.ReturnRequestedAtUtc is null)
+                            {
+                                <details class="order-return-details">
+                                    <summary class="order-return-toggle">YÊU CẦU HOÀN TRẢ</summary>
+                                    <form asp-controller="Orders" asp-action="RequestReturn" asp-route-id="@order.Id" method="post" enctype="multipart/form-data" class="order-return-form">
+                                        <strong>Yêu cầu hoàn trả</strong>
+                                        <label>Lý do hoàn trả<textarea name="reason" class="portal-input" minlength="10" maxlength="1000" rows="3" required placeholder="Mô tả tình trạng sản phẩm và lý do bạn muốn hoàn trả..."></textarea></label>
+                                        <label>Video sản phẩm/đơn hàng (MP4, MOV hoặc WebM · tối đa 100 MB)<input name="video" class="portal-input" type="file" accept="video/mp4,video/quicktime,video/webm" required /></label>
+                                        <button type="submit" class="mini-submit">GỬI YÊU CẦU HOÀN TRẢ</button>
+                                    </form>
+                                </details>
+                            }
+                            @if (order.ReturnRequestedAtUtc is not null)
+                            {
+                                <div class="order-return-submitted"><strong>Đã gửi yêu cầu hoàn trả</strong><span>@order.ReturnRequestedAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span><p>@order.ReturnReason</p><small>Nhân viên sẽ kiểm tra video và liên hệ bạn để xử lý.</small></div>
+                            }
+                            @if (order.Status == OrderStatuses.Cancelled)
+                            {
+                                <p class="order-cancelled-note">Đơn hàng đã hủy; số lượng sản phẩm đã được hoàn lại vào kho.</p>
+                            }
+                            else
+                            {
+                                <ol class="order-progress" aria-label="Tiến trình đơn hàng">
+                                    @foreach (var status in TrackingStatuses)
+                                    {
+                                        var statusIndex = Array.IndexOf(TrackingStatuses, status);
+                                        var currentIndex = Array.IndexOf(TrackingStatuses, order.Status);
+                                        var stepClass = statusIndex < currentIndex ? "is-complete" : statusIndex == currentIndex ? "is-current" : string.Empty;
+                                        <li class="@stepClass" aria-current="@(statusIndex == currentIndex ? "step" : null)">@OrderStatusText(status)</li>
+                                    }
+                                </ol>
+                            }
+                            @if (order.Status == OrderStatuses.Pending)
+                            {
+                                <form asp-controller="Orders" asp-action="Cancel" asp-route-id="@order.Id" method="post" class="cancel-order-form"><button type="submit" class="text-action">Hủy đơn hàng</button></form>
+                            }
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+    </div>
+</section>
+@functions {
+    private static readonly string[] TrackingStatuses =
+    [
+        OrderStatuses.Pending,
+        OrderStatuses.Processing,
+        OrderStatuses.Shipped,
+        OrderStatuses.Delivered
+    ];
+
+    private static string OrderStatusText(string status) => status switch
+    {
+        OrderStatuses.Pending => "Chờ xác nhận",
+        OrderStatuses.Processing => "Đang chuẩn bị",
+        OrderStatuses.Shipped => "Đang giao",
+        OrderStatuses.Delivered => "Đã giao",
+        OrderStatuses.Cancelled => "Đã hủy",
+        _ => status
+    };
+}
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

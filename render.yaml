@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: w-studio
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_HTTP_PORTS
+        value: "10000"
+      - key: Database__Provider
+        value: Sqlite
+      - key: ConnectionStrings__DefaultConnection
+        value: Data Source=/var/data/app.db
+      - key: Storage__PersistentPath
+        value: /var/data
+      - key: Ai__Model
+        value: gemini-3-flash-preview
+      - key: Ai__ApiKey
+        sync: false
+      - key: AdminBootstrap__Email
+        sync: false
+      - key: AdminBootstrap__Password
+        sync: false

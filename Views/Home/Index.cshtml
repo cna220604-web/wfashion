@@ -1,0 +1,238 @@
+﻿@model StorefrontViewModel
+@{
+    ViewData["Title"] = "Thời trang tuyển chọn";
+    Layout = null;
+    var storefrontProducts = Model.Products.Select(product => new
+    {
+        id = product.Slug,
+        name = product.Name,
+        category = product.Category,
+        categoryLabel = product.Category switch { "women" => "NỮ · THIẾT KẾ MỚI", "men" => "NAM · THIẾT KẾ MỚI", _ => "PHỤ KIỆN" },
+        price = product.Price,
+        image = product.ImageId,
+        description = product.Description,
+        sizes = product.Sizes,
+        color = product.Color,
+        stock = product.Stock,
+        review = Model.Reviews.TryGetValue(product.Slug, out var summary)
+            ? summary
+            : new ProductReviewSummary(0, 0)
+    });
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#773c3d" />
+    <meta name="description" content="Khám phá thời trang W Studio và tìm cách phối màu trang phục hài hòa với Color Stylist." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="W Studio" />
+    <title>@ViewData["Title"] — W Studio</title>
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="~/images/pwa/apple-touch-icon.png" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/editorial.css" asp-append-version="true" />
+</head>
+<body class="store-page">
+    <div class="announcement-bar">BỘ SƯU TẬP MỚI ĐÃ CÓ MẶT <span>—</span> PHONG CÁCH CỦA RIÊNG BẠN</div>
+    <header class="store-header">
+        <a class="store-logo" href="#home" aria-label="WebApplication1 Studio - Trang chủ">W<span>STUDIO</span></a>
+        <nav class="store-nav" aria-label="Danh mục sản phẩm">
+            <a href="#collection" data-nav-category="all">Tất cả</a>
+            <a href="#collection" data-nav-category="women">Nữ</a>
+            <a href="#collection" data-nav-category="men">Nam</a>
+            <a href="#collection" data-nav-category="accessories">Phụ kiện</a>
+        </nav>
+        <div class="header-actions">
+            <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Tìm sản phẩm" aria-label="Tìm sản phẩm" /></label>
+            <button id="favorites-filter" class="icon-button favorite-filter" type="button" aria-label="Lọc sản phẩm yêu thích" aria-pressed="false">♡</button>
+            <button id="open-cart" class="cart-trigger" type="button" aria-label="Mở giỏ hàng">TÚI <span id="cart-count">0</span></button>
+            <button class="install-app-button" type="button" data-install-app hidden>CÀI ỨNG DỤNG</button>
+            @if (isAuthenticated)
+            {
+                <a class="store-account-link" asp-controller="Dashboard" asp-action="Index">TÀI KHOẢN</a>
+                <form asp-controller="Account" asp-action="Logout" method="post" class="store-logout-form"><button class="store-account-link" type="submit">ĐĂNG XUẤT</button></form>
+            }
+            else
+            {
+                <a class="store-account-link" asp-controller="Account" asp-action="Login">ĐĂNG NHẬP</a>
+            }
+        </div>
+    </header>
+
+    <main id="home">
+        <section class="store-hero" aria-labelledby="hero-heading">
+            <div class="hero-copy">
+                <span class="section-kicker">MÙA MỚI · 2026</span>
+                <h1 id="hero-heading">Mặc điều<br />bạn <em>cảm thấy.</em></h1>
+                <p>Những thiết kế có chủ đích. Những món đồ kể câu chuyện của riêng bạn.</p>
+                <nav class="hero-links" aria-label="Khám phá phong cách">
+                    <a class="text-link" href="#collection">Khám phá bộ sưu tập <span aria-hidden="true">↗</span></a>
+                    <a class="text-link hero-tool-link" href="#color-stylist">Phối đồ <span aria-hidden="true">↗</span></a>
+                    <a class="text-link hero-tool-link" href="#season-studio">Gợi ý đồ theo mùa <span aria-hidden="true">↗</span></a>
+                </nav>
+            </div>
+            <div class="hero-art" role="img" aria-label="Ảnh thời trang bộ sưu tập mùa mới">
+                <div class="hero-art-note">THE ART<br />OF DRESSING</div>
+                <span class="hero-art-index">01 / @Model.Products.Count.ToString("D2")</span>
+            </div>
+            <div class="hero-side-note">THỜI TRANG CÓ CHỦ ĐÍCH — THIẾT KẾ CHO MỌI NGÀY</div>
+        </section>
+
+        <section id="season-studio" class="season-studio" data-season="autumn" aria-labelledby="season-heading">
+            <div class="season-backdrop" aria-hidden="true"></div>
+            <div id="season-weather" class="season-weather" aria-hidden="true"></div>
+            <div class="season-content">
+                <span class="section-kicker">W STUDIO · MẶC ĐẸP QUANH NĂM</span>
+                <h2 id="season-heading">Phong cách theo <em id="season-name">mùa thu</em></h2>
+                <p id="season-description" class="season-description"></p>
+                <nav class="season-picker" aria-label="Chọn mùa">
+                    <button type="button" data-season-choice="spring">Mùa xuân</button>
+                    <button type="button" data-season-choice="summer">Mùa hè</button>
+                    <button type="button" data-season-choice="autumn">Mùa thu</button>
+                    <button type="button" data-season-choice="winter">Mùa đông</button>
+                </nav>
+                <p class="season-note">Mùa khởi đầu được chọn theo tháng hiện tại; bạn có thể đổi mùa. Gợi ý dựa trên tên, mô tả và màu sản phẩm, nên có thể khác theo khí hậu từng vùng.</p>
+                <div class="season-recommendation-heading"><div><span class="section-kicker">GỢI Ý TỪ BỘ SƯU TẬP</span><h3 id="season-recommendation-title">Chọn món hợp mùa</h3></div><span id="season-recommendation-count"></span></div>
+                <div id="season-products" class="season-products" aria-live="polite"></div>
+                <p id="season-products-empty" class="season-products-empty" hidden>Chưa có sản phẩm phù hợp để gợi ý ở mùa này.</p>
+            </div>
+        </section>
+
+        <section id="color-stylist" class="color-stylist" aria-labelledby="color-stylist-heading">
+            <div class="color-stylist-intro"><span class="section-kicker">W STUDIO · COLOR STYLIST</span><h2 id="color-stylist-heading">Mặc màu gì<br /><em>cho thật hợp?</em></h2><p>Chọn màu áo và màu quần riêng. Gợi ý sản phẩm chỉ hiện khi đúng loại trang phục và đúng màu bạn chọn; stylist cũng đề xuất màu giày, thắt lưng và phụ kiện.</p><div class="color-howto"><span>01 <b>Chọn màu áo</b></span><span>02 <b>Chọn màu quần</b></span><span>03 <b>Xem outfit hoàn chỉnh</b></span></div>
+                <div class="color-stylist-tools">
+                    <div class="color-look-browser">
+                        <span class="stylist-tools-label">CHỌN MÙA & DỊP MẶC</span>
+                        <div id="color-look-seasons" class="color-look-seasons" role="group" aria-label="Lọc theo mùa"></div>
+                        <label class="color-look-search"><span aria-hidden="true">⌕</span><input id="color-look-search" type="search" placeholder="Tìm dịp: đi làm, du lịch, tiệc..." aria-label="Tìm dịp phối đồ theo từ khóa" /><button id="clear-color-look-search" type="button" aria-label="Xóa nội dung tìm kiếm" hidden>×</button></label>
+                        <div id="color-look-presets" class="color-look-presets" role="group" aria-label="Chọn dịp mặc"></div>
+                        <p id="color-look-empty" class="color-look-empty" hidden>Không tìm thấy dịp phù hợp. Hãy thử từ khóa khác.</p>
+                    </div>
+                    <div class="color-stylist-actions"><span id="color-look-label" aria-live="polite">Bản phối tùy chỉnh</span><div><button type="button" data-color-action="random">Gợi ý ngẫu hứng</button><button type="button" data-color-action="save">Lưu bản phối</button><button type="button" data-color-action="copy">Sao chép</button><button type="button" data-color-action="reset">Đặt lại</button></div></div>
+                    <div id="saved-color-outfits" class="saved-color-outfits" aria-label="Các bản phối đã lưu"></div>
+                </div>
+            </div>
+            <div class="color-stylist-workspace">
+                <div class="color-model-card"><div class="color-model-heading"><span class="section-kicker">MINH HỌA PHỐI MÀU</span><span id="color-model-caption">Sắc màu hài hòa</span></div>
+                    <svg class="color-model" viewBox="0 0 300 430" role="img" aria-labelledby="color-model-title color-model-description"><title id="color-model-title">Hình minh họa phối màu trang phục</title><desc id="color-model-description">Người mẫu minh họa với áo và quần được tô theo bảng màu khách chọn.</desc><ellipse cx="150" cy="407" rx="86" ry="12" fill="#d5c9b9"/><path d="M128 92h44v42h-44z" fill="#d6a77f"/><ellipse cx="150" cy="62" rx="42" ry="51" fill="#e2b995"/><path d="M108 60c-2-41 20-59 46-59 31 0 51 24 43 62-8-16-16-25-26-31-16 15-37 23-63 28z" fill="#392b29"/><path d="M116 132c-20 8-34 25-42 51l-24 96c-4 15 18 23 25 8l33-78 3 91h78l3-91 33 78c7 15 29 7 25-8l-24-96c-8-26-22-43-42-51l-26-7h-16z" fill="var(--model-top)"/><path d="M112 292h76l20 96c3 15-7 27-22 27h-17l-13-79-13 79h-17c-15 0-25-12-22-27z" fill="var(--model-bottom)"/><path d="M151 334l-8 74h-42c-8 0-11 12-4 16h57l10-65zM162 334l8 74h42c8 0 11 12 4 16h-57l-10-65z" fill="#e2b995"/><path d="M99 415h48v10H96c-6 0-4-10 3-10zM169 415h48c7 0 9 10 3 10h-51z" fill="#342725"/><path d="M118 140l32 24 32-24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3"/><path d="M150 164v120" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="2"/><circle cx="150" cy="178" r="3" fill="#fff7ed"/><circle cx="150" cy="195" r="3" fill="#fff7ed"/><circle cx="150" cy="212" r="3" fill="#fff7ed"/></svg>
+                    <div class="model-color-labels"><span><i id="model-top-swatch"></i><span>Áo · <b id="model-top-name"></b></span></span><span><i id="model-bottom-swatch"></i><span>Quần / váy · <b id="model-bottom-name"></b></span></span></div>
+                </div>
+                <div class="color-guide-card"><span class="section-kicker">TẠO BẢN PHỐI CỦA BẠN</span>
+                    <section class="color-choice-group" aria-labelledby="top-color-heading"><div class="color-choice-heading"><span class="section-kicker">01 · PHẦN TRÊN</span><h3 id="top-color-heading">Chọn màu áo</h3></div><div id="top-color-options" class="color-swatches" role="group" aria-label="Chọn màu áo"></div></section>
+                    <section class="color-choice-group" aria-labelledby="bottom-color-heading"><div class="color-choice-heading"><span class="section-kicker">02 · PHẦN DƯỚI</span><h3 id="bottom-color-heading">Chọn màu quần / váy</h3></div><div id="bottom-color-options" class="color-swatches" role="group" aria-label="Chọn màu quần hoặc váy"></div></section>
+                    <div class="color-combination"><div class="combination-heading"><div><span class="section-kicker">COLOR PAIRING</span><h3>Gợi ý hoàn thiện outfit</h3></div><span class="combination-rule">GIÀY · THẮT LƯNG</span></div><p id="color-combination-tip" class="color-combination-tip" aria-live="polite"></p><div id="color-accessory-guidance" class="color-accessory-guidance" aria-live="polite"></div></div>
+                    <div class="color-product-filters" aria-label="Lọc sản phẩm phối cùng"><label>Danh mục<select id="stylist-gender-filter" aria-label="Lọc sản phẩm theo đồ nam và nữ"><option value="">Đồ nam và nữ</option><option value="women">Đồ nữ</option><option value="men">Đồ nam</option></select></label><label>Ngân sách mỗi món<select id="stylist-budget-filter" aria-label="Lọc theo ngân sách mỗi món"><option value="">Mọi mức giá</option><option value="500000">Đến 500.000₫</option><option value="1000000">Đến 1.000.000₫</option><option value="2000000">Đến 2.000.000₫</option><option value="5000000">Đến 5.000.000₫</option></select></label><label>Chiều cao (cm)<input id="stylist-height-filter" type="number" min="100" max="230" step="1" inputmode="numeric" placeholder="Ví dụ: 165" aria-label="Chiều cao tính bằng centimet" /></label><label>Cân nặng (kg)<input id="stylist-weight-filter" type="number" min="20" max="250" step="0.5" inputmode="decimal" placeholder="Ví dụ: 55" aria-label="Cân nặng tính bằng kilogram" /></label><label>Kích cỡ<select id="stylist-size-filter" aria-label="Lọc theo kích cỡ"><option value="">Mọi kích cỡ</option></select></label><p class="stylist-measurement-note">Chiều cao và cân nặng giúp ước tính size; kết quả chỉ mang tính tham khảo, hãy đối chiếu bảng size từng sản phẩm.</p><div id="stylist-size-recommendation" class="stylist-size-recommendation" role="status" aria-live="polite" hidden></div></div>
+                    <section class="color-results-group"><div class="matching-products-heading"><div><span class="section-kicker">01 · ĐÚNG MÀU ÁO</span><h3>Áo phù hợp</h3></div><span id="top-products-count"></span></div><div id="top-matching-products" class="matching-products" aria-live="polite"></div><p id="top-products-empty" class="matching-products-empty" hidden>Chưa có áo đúng màu này trong shop.</p></section>
+                    <section class="color-results-group"><div class="matching-products-heading"><div><span class="section-kicker">02 · ĐÚNG MÀU QUẦN</span><h3>Quần / váy phù hợp</h3></div><span id="bottom-products-count"></span></div><div id="bottom-matching-products" class="matching-products" aria-live="polite"></div><p id="bottom-products-empty" class="matching-products-empty" hidden>Chưa có quần hoặc váy đúng màu này trong shop.</p></section>
+                    <section class="color-results-group"><div class="matching-products-heading"><div><span class="section-kicker">03 · PHỤ KIỆN CÓ SẴN</span><h3>Điểm nhấn đi cùng</h3></div><span id="accessory-products-count"></span></div><div id="accessory-matching-products" class="matching-products" aria-live="polite"></div><p id="accessory-products-empty" class="matching-products-empty" hidden>Chưa có phụ kiện hợp màu trong shop; bạn vẫn có thể tham khảo gợi ý màu giày và thắt lưng.</p></section>
+                </div>
+            </div>
+        </section>
+
+        <section id="collection" class="collection-section" aria-labelledby="collection-heading">
+            <div class="collection-heading-row">
+                <div>
+                    <span class="section-kicker">CHỌN MÓN BẠN YÊU</span>
+                    <h2 id="collection-heading">Bộ sưu tập <em>tuyển chọn</em></h2>
+                </div>
+                <label class="sort-control">Sắp xếp
+                    <select id="sort-select" aria-label="Sắp xếp sản phẩm">
+                        <option value="featured">Nổi bật</option>
+                        <option value="price-asc">Giá tăng dần</option>
+                        <option value="price-desc">Giá giảm dần</option>
+                    </select>
+                </label>
+            </div>
+            <div class="category-tabs" role="group" aria-label="Lọc theo danh mục">
+                <button class="category-tab is-active" type="button" data-category="all" aria-pressed="true">Tất cả</button>
+                <button class="category-tab" type="button" data-category="women" aria-pressed="false">Nữ</button>
+                <button class="category-tab" type="button" data-category="men" aria-pressed="false">Nam</button>
+                <button class="category-tab" type="button" data-category="accessories" aria-pressed="false">Phụ kiện</button>
+            </div>
+            <div class="catalog-filters" aria-label="Lọc bộ sưu tập">
+                <label>Màu sắc<select id="color-filter" aria-label="Lọc theo màu sắc"><option value="">Tất cả màu</option></select></label>
+                <label>Kích cỡ<select id="size-filter" aria-label="Lọc theo kích cỡ"><option value="">Tất cả kích cỡ</option></select></label>
+                <label>Ngân sách<select id="price-filter" aria-label="Lọc theo ngân sách"><option value="">Mọi mức giá</option><option value="0-500000">Dưới 500.000₫</option><option value="500000-1000000">500.000–1.000.000₫</option><option value="1000000-2000000">1.000.000–2.000.000₫</option><option value="2000000-">Trên 2.000.000₫</option></select></label>
+            </div>
+            <p id="product-results-count" class="product-results-count" aria-live="polite"></p>
+            <div id="product-grid" class="product-grid" aria-live="polite"></div>
+            <p id="empty-products" class="empty-products" hidden>Chưa tìm thấy sản phẩm phù hợp. Hãy thử từ khóa hoặc danh mục khác.</p>
+            <nav id="product-pagination" class="product-pagination" aria-label="Trang sản phẩm" hidden><button id="products-previous" type="button">← Trước</button><span id="products-page-label" aria-live="polite"></span><button id="products-next" type="button">Tiếp →</button></nav>
+            <p class="demo-disclaimer">W Studio</p>
+        </section>
+
+        <section class="stylist-banner">
+            <div><span class="section-kicker">MỘT GỢI Ý ĐÚNG LÚC</span><h2>Chưa biết mặc gì?<br /><em>Stylist AI sẵn sàng.</em></h2></div>
+            <button id="open-chat-from-banner" class="outline-button" type="button">Trò chuyện cùng stylist <span aria-hidden="true">↗</span></button>
+        </section>
+    </main>
+
+    <footer class="store-footer">
+        <a class="store-logo" href="#home">W<span>STUDIO</span></a>
+        <p>Thời trang tuyển chọn, dành cho cách bạn muốn cảm nhận.</p>
+        <span>© 2026 W STUDIO</span>
+    </footer>
+
+    <dialog id="product-dialog" class="store-dialog product-dialog" aria-labelledby="product-name">
+        <button class="dialog-close" type="button" data-close="product-dialog" aria-label="Đóng">×</button>
+        <div id="product-detail"></div>
+    </dialog>
+    <form id="antiforgery-form" hidden>@Html.AntiForgeryToken()</form>
+
+    <dialog id="cart-dialog" class="store-dialog cart-dialog" aria-labelledby="cart-heading">
+        <div class="drawer-header"><div><span class="section-kicker">NHỮNG MÓN BẠN CHỌN</span><h2 id="cart-heading">Túi của bạn <span id="drawer-count"></span></h2></div><button class="dialog-close" type="button" data-close="cart-dialog" aria-label="Đóng giỏ hàng">×</button></div>
+        <div id="cart-items" class="cart-items"></div>
+        <div id="cart-empty" class="cart-empty" hidden><p>Túi đang chờ một món đồ đặc biệt.</p><button class="text-link" type="button" data-close="cart-dialog">Khám phá bộ sưu tập ↗</button></div>
+        <div id="cart-summary" class="cart-summary">
+            <div class="shipping-note">Miễn phí giao hàng cho đơn từ 800.000₫</div>
+            <div class="summary-line"><span>Tạm tính</span><strong id="subtotal-value"></strong></div>
+            <div class="summary-line"><span>Giao hàng</span><strong id="shipping-value"></strong></div>
+            <div class="summary-line total-line"><span>Tổng cộng</span><strong id="total-value"></strong></div>
+            <button id="checkout-button" class="solid-button" type="button">TIẾP TỤC ĐẶT HÀNG <span aria-hidden="true">→</span></button>
+            <p class="demo-disclaimer">Thanh toán COD · đơn hàng được lưu vào tài khoản của bạn.</p>
+        </div>
+    </dialog>
+
+    <dialog id="checkout-dialog" class="store-dialog checkout-dialog" aria-labelledby="checkout-heading">
+        <button class="dialog-close" type="button" data-close="checkout-dialog" aria-label="Đóng">×</button>
+        <div id="checkout-form-wrap">
+            <span class="section-kicker">BƯỚC CUỐI CÙNG</span><h2 id="checkout-heading">Thông tin nhận hàng</h2>
+            <p class="checkout-intro">Thanh toán khi nhận hàng (COD). Đơn sẽ xuất hiện trong tài khoản của bạn.</p>
+            <form id="checkout-form" class="checkout-form">
+                <label>Họ và tên<input name="CustomerName" value="@Model.CustomerName" autocomplete="name" minlength="2" maxlength="100" required /></label>
+                <div class="form-row"><label>Số điện thoại<input name="Phone" type="tel" value="@Model.CustomerPhone" autocomplete="tel" maxlength="20" required /></label><span class="checkout-email">Tài khoản: @User.Identity?.Name</span></div>
+                <div class="checkout-address-row">
+                    <label for="checkout-address">Địa chỉ nhận hàng<input id="checkout-address" name="Address" value="@Model.CustomerAddress" data-saved-address="@Model.CustomerAddress" autocomplete="street-address" maxlength="240" required readonly="@(string.IsNullOrWhiteSpace(Model.CustomerAddress) ? null : "readonly")" /></label>
+                    <button class="checkout-address-edit" type="button" data-edit-checkout-address hidden="@string.IsNullOrWhiteSpace(Model.CustomerAddress)">SỬA ĐỊA CHỈ</button>
+                </div>
+                <p class="checkout-address-hint">@(!string.IsNullOrWhiteSpace(Model.CustomerAddress) ? "Địa chỉ từ hồ sơ của bạn. Địa chỉ mới sẽ được lưu làm mặc định." : "Địa chỉ này sẽ được lưu vào hồ sơ để bạn dùng cho lần đặt hàng sau.")</p>
+                <label>Ghi chú <span class="optional-label">(không bắt buộc)</span><textarea name="Note" rows="2" maxlength="300"></textarea></label>
+                <div class="cod-reminder">COD · Thanh toán khi nhận hàng <span id="checkout-total"></span></div>
+                <button class="solid-button" type="submit">XÁC NHẬN ĐẶT HÀNG <span aria-hidden="true">→</span></button>
+                <p id="checkout-error" class="checkout-error" role="alert" hidden></p>
+            </form>
+        </div>
+        <div id="checkout-success" class="checkout-success" hidden>
+            <span class="success-mark" aria-hidden="true">✓</span><span class="section-kicker">ĐẶT HÀNG THÀNH CÔNG</span><h2>Cảm ơn bạn.</h2><p id="order-confirmation"></p><p class="demo-disclaimer">Đơn hàng đã được lưu. Nhân viên sẽ cập nhật trạng thái trong tài khoản của bạn.</p><button class="solid-button" type="button" data-close="checkout-dialog">TIẾP TỤC KHÁM PHÁ</button>
+        </div>
+    </dialog>
+
+    <button id="chat-launcher" class="chat-launcher" type="button" aria-label="Mở stylist AI"><span aria-hidden="true">✳</span> STYLIST AI</button>
+    <section id="chat-panel" class="chat-panel" aria-label="Trò chuyện với stylist AI" hidden>
+        <header class="chat-header"><div><span class="chat-status-dot"></span><strong>Stylist riêng của bạn</strong><small id="chat-subtitle">Gợi ý phối đồ, theo phong cách bạn</small></div><div class="chat-header-actions"><button id="expand-chat" type="button" aria-label="Mở rộng khung chat" aria-pressed="false" title="Mở rộng khung chat">↗</button><button id="close-chat" type="button" aria-label="Đóng chat">×</button></div></header>
+        <div id="chat-messages" class="chat-messages" aria-live="polite"><div class="chat-bubble assistant-bubble">Xin chào! Mình có thể tìm đồ theo dịp mặc, ngân sách, màu sắc và size. Chọn gợi ý bên dưới hoặc nhắn nhu cầu của bạn nhé.</div></div>
+        <div id="stylist-shortcuts" class="stylist-shortcuts" aria-label="Gợi ý yêu cầu cho stylist"><button type="button" data-stylist-prompt="Tìm giúp mình outfit đi làm, ngân sách dưới 800.000đ. Hỏi mình màu sắc và size nếu cần nhé.">Đi làm · dưới 800k</button><button type="button" data-stylist-prompt="Tìm giúp mình đồ đi hẹn hò, ngân sách dưới 1.500.000đ. Hỏi mình màu sắc và size nếu cần nhé.">Hẹn hò · dưới 1,5 triệu</button><button type="button" data-stylist-prompt="Gợi ý đồ đi chơi cuối tuần, ưu tiên màu trung tính và giá hợp lý.">Đi chơi cuối tuần</button></div>
+        <p id="human-chat-status" class="human-chat-status" role="status" hidden></p>
+        <form id="chat-form" class="chat-form"><input id="chat-input" aria-label="Nhu cầu mua sắm hoặc tin nhắn cho nhân viên" maxlength="1200" placeholder="Ví dụ: áo xanh navy size M dưới 700k..." autocomplete="off" required /><button type="submit" aria-label="Tìm sản phẩm phù hợp">↑</button></form>
+        <p class="chat-disclaimer">Stylist chỉ gợi ý sản phẩm đang bán; vui lòng kiểm tra size và tồn kho trước khi đặt.</p>
+    </section>
+    <div id="store-toast" class="store-toast" role="status" aria-live="polite" hidden></div>
+
+    <script id="storefront-data" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { products = storefrontProducts, isCustomer = User.IsInRole(AppRoles.Customer), isAuthenticated }, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)))</script>
+    <script src="~/js/pwa.js" asp-append-version="true"></script>
+    <script src="~/js/storefront.js" asp-append-version="true"></script>
+</body>
+</html>

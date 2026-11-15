@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "W Studio — Thời trang tuyển chọn",
+  "short_name": "W Studio",
+  "description": "Khám phá thời trang tuyển chọn và nhận gợi ý phối đồ từ stylist AI.",
+  "lang": "vi-VN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "theme_color": "#773c3d",
+  "background_color": "#f5f0e8",
+  "categories": ["shopping", "lifestyle"],
+  "icons": [
+    { "src": "/images/pwa/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/images/pwa/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/images/pwa/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/images/pwa/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}

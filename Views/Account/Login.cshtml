@@ -1,0 +1,39 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Đăng nhập";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+}
+<section class="portal-page">
+    <div class="portal-card account-card">
+        <aside class="account-story" aria-label="W Studio">
+            <span class="account-story-kicker">W STUDIO · THỜI TRANG TUYỂN CHỌN</span>
+            <h2>Mặc điều<br />bạn <em>cảm thấy.</em></h2>
+            <p>Lưu lại những món đồ yêu thích, theo dõi đơn hàng và tìm cảm hứng cho phong cách riêng của bạn.</p>
+            <span class="account-story-note">THIẾT KẾ CHO MỌI NGÀY</span>
+        </aside>
+        <div class="account-form-panel">
+            <a class="portal-brand" asp-controller="Home" asp-action="Index">W <span>STUDIO</span></a>
+            <span class="portal-kicker">CHÀO MỪNG TRỞ LẠI</span>
+            <h1>Đăng nhập</h1>
+            <p>Đăng nhập để quản lý đơn hàng và khám phá phong cách của bạn.</p>
+            <form asp-action="Login" method="post">
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+                <label asp-for="Email"></label>
+                <input asp-for="Email" class="portal-input" autocomplete="username" autofocus />
+                <span asp-validation-for="Email" class="field-error"></span>
+                <label asp-for="Password"></label>
+                <input asp-for="Password" class="portal-input" autocomplete="current-password" />
+                <span asp-validation-for="Password" class="field-error"></span>
+                <label class="portal-check"><input asp-for="RememberMe" /> Ghi nhớ đăng nhập trên thiết bị này</label>
+                <button class="portal-submit" type="submit">ĐĂNG NHẬP <span>→</span></button>
+            </form>
+            <a class="password-recovery-link" asp-action="ForgotPassword">Quên mật khẩu?</a>
+            <div class="account-switch">Chưa có tài khoản? <a asp-action="Register" asp-route-returnUrl="@returnUrl">Tạo tài khoản khách hàng</a></div>
+            <a class="portal-back" asp-controller="Home" asp-action="Index">← Quay lại cửa hàng</a>
+        </div>
+            </div>
+        </section>
+        @section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

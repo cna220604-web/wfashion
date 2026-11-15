@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#773c3d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="W Studio" />
+    <title>@ViewData["Title"] — W Studio</title>
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="~/images/pwa/apple-touch-icon.png" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/editorial.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/WebApplication1.styles.css" asp-append-version="true" />
+</head>
+<body class="portal-layout @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["action"]?.ToString() == "Customer" ? "customer-portal" : ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" ? "admin-portal" : ViewContext.RouteData.Values["controller"]?.ToString() == "Staff" ? "staff-portal" : "")">
+    <header class="portal-header">
+        <a class="portal-brand" asp-controller="Home" asp-action="Index">W <span>STUDIO</span></a>
+        <nav class="portal-nav" aria-label="Điều hướng">
+            <a asp-controller="Home" asp-action="Index">Cửa hàng</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                @if (User.IsInRole(AppRoles.Admin)) { <a asp-controller="Admin" asp-action="Index">Quản trị</a> }
+                else if (User.IsInRole(AppRoles.Employee)) { <a asp-controller="Staff" asp-action="Index">Bàn làm việc</a> }
+                else { <a asp-controller="Dashboard" asp-action="Customer">Tài khoản của tôi</a> }
+                <span class="portal-user">@User.Identity.Name</span>
+                <form asp-controller="Account" asp-action="Logout" method="post"><button type="submit" class="portal-nav-button">Đăng xuất</button></form>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login">Đăng nhập</a>
+                <a asp-controller="Account" asp-action="Register">Đăng ký</a>
+            }
+        </nav>
+    </header>
+    <main role="main" class="portal-main">
+        @RenderBody()
+    </main>
+    <footer class="portal-footer">
+        <span>© 2026 W Studio · Thời trang tuyển chọn</span>
+        <button class="install-app-button" type="button" data-install-app hidden>CÀI ỨNG DỤNG</button>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/pwa.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

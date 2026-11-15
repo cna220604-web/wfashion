@@ -1,0 +1,9 @@
+.git
+.vs
+**/bin/
+**/obj/
+app.db
+app.db-shm
+app.db-wal
+wwwroot/images/uploads/
+wwwroot/images/avatars/

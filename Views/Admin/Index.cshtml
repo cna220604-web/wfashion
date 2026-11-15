@@ -1,0 +1,123 @@
+@model AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Quản trị hệ thống";
+    var tab = Context.Request.Query["tab"].ToString();
+}
+<section class="dashboard-page admin-dashboard">
+    <div class="dashboard-heading"><div><span class="portal-kicker">ADMIN WORKSPACE · 01</span><h1>Tổng quan cửa hàng</h1><p>Quản lý sản phẩm, nhập hàng, chi phí, đơn hàng và quyền tài khoản.</p></div><span class="role-badge admin-badge">QUẢN TRỊ VIÊN</span></div>
+    @if (TempData["Notice"] is string notice) { <div class="portal-alert success">@notice</div> }
+    @if (TempData["Error"] is string error) { <div class="portal-alert danger">@error</div> }
+    <div class="metric-grid">
+        <article class="metric-card"><span>KHÁCH HÀNG</span><strong>@Model.CustomerCount</strong></article>
+        <article class="metric-card"><span>NHÂN VIÊN</span><strong>@Model.EmployeeCount</strong></article>
+        <article class="metric-card"><span>SẢN PHẨM ĐANG BÁN</span><strong>@Model.ProductCount</strong></article>
+        <article class="metric-card"><span>ĐƠN CHỜ XÁC NHẬN</span><strong>@Model.PendingOrderCount</strong></article>
+        <article class="metric-card sales-metric"><span>DOANH SỐ ĐƠN KHÔNG BỊ HỦY</span><strong>@Model.SalesTotal.ToString("N0")₫</strong></article>
+        <article class="metric-card sales-metric"><span>TIỀN NHẬP HÀNG ĐÃ GHI</span><strong>@Model.StockPurchaseTotal.ToString("N0")₫</strong></article>
+        <article class="metric-card sales-metric"><span>CHI PHÍ VẬN HÀNH</span><strong>@Model.OperatingExpenseTotal.ToString("N0")₫</strong></article>
+        <article class="metric-card sales-metric"><span>ĐƠN HÀNG TRỪ CHI PHÍ ĐÃ GHI</span><strong>@Model.RecordedCashFlow.ToString("N0")₫</strong></article>
+    </div>
+    <p class="panel-help">Số chênh lệch tham khảo: doanh số đơn không bị hủy trừ tiền nhập hàng và chi phí vận hành đã ghi nhận; chưa phải số dư tiền thực tế.</p>
+    <nav class="dashboard-tabs" aria-label="Khu vực quản trị"><a class="@(tab == "products" ? "is-active" : "")" href="?tab=products">Sản phẩm & tồn kho</a><a class="@(tab == "expenses" ? "is-active" : "")" href="?tab=expenses">Nhập hàng & chi phí</a><a class="@(tab == "users" ? "is-active" : "")" href="?tab=users">Tài khoản & vai trò</a><a class="@(tab == "orders" ? "is-active" : "")" href="?tab=orders">Đơn hàng</a></nav>
+
+    @if (tab == "expenses")
+    {
+        <div class="admin-finance-forms">
+            <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">KHO · NHẬN HÀNG</span><h2>Ghi nhận nhập hàng</h2></div></div>
+                <p class="panel-help">Lưu số lượng và giá vốn theo lần nhập. Tồn kho sản phẩm sẽ tự động tăng sau khi lưu thành công.</p>
+                <form asp-action="RecordStockReceipt" method="post" class="product-admin-form finance-form">
+                    <label>Sản phẩm<select name="ProductSlug" class="portal-select" required><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products) { <option value="@product.Slug">@product.Name · tồn @product.Stock</option> }</select></label>
+                    <label>Số lượng nhập<input name="Quantity" class="portal-input" type="number" min="1" max="100000" required /></label>
+                    <label>Giá nhập / sản phẩm (₫)<input name="UnitCost" class="portal-input" type="number" min="1" max="9999999999.99" step="0.01" required /></label>
+                    <label>Ngày nhập<input name="ReceivedOn" class="portal-input" type="date" value="@DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).ToString("yyyy-MM-dd")" required /></label>
+                    <label>Nhà cung cấp<input name="Supplier" class="portal-input" maxlength="120" /></label>
+                    <label>Mã phiếu / hóa đơn<input name="Reference" class="portal-input" maxlength="80" /></label>
+                    <label class="wide-field">Ghi chú<input name="Notes" class="portal-input" maxlength="500" /></label>
+                    <button class="mini-submit" type="submit">LƯU NHẬP HÀNG & CỘNG TỒN KHO</button>
+                </form>
+            </section>
+            <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">TÀI CHÍNH · CHI PHÍ</span><h2>Ghi nhận chi phí vận hành</h2></div></div>
+                <p class="panel-help">Ghi các khoản như mặt bằng, điện nước, lương, marketing, đóng gói hoặc chi phí khác của shop.</p>
+                <form asp-action="RecordOperatingExpense" method="post" class="product-admin-form finance-form">
+                    <label>Nhóm chi phí<select name="Category" class="portal-select" required><option value="">Chọn nhóm chi phí</option><option>Thuê mặt bằng</option><option>Điện, nước, internet</option><option>Lương nhân viên</option><option>Marketing</option><option>Đóng gói & vận chuyển</option><option>Phần mềm & công cụ</option><option>Thuế & phí</option><option>Sửa chữa</option><option>Khác</option></select></label>
+                    <label>Số tiền (₫)<input name="Amount" class="portal-input" type="number" min="1" max="9999999999.99" step="0.01" required /></label>
+                    <label>Ngày chi<input name="SpentOn" class="portal-input" type="date" value="@DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).ToString("yyyy-MM-dd")" required /></label>
+                    <label>Đơn vị nhận tiền<input name="Supplier" class="portal-input" maxlength="120" /></label>
+                    <label class="wide-field">Nội dung chi<input name="Description" class="portal-input" maxlength="160" required /></label>
+                    <label class="wide-field">Ghi chú<input name="Notes" class="portal-input" maxlength="500" /></label>
+                    <button class="mini-submit" type="submit">LƯU CHI PHÍ</button>
+                </form>
+            </section>
+        </div>
+        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">SỔ KHO · 50 GẦN NHẤT</span><h2>Lịch sử nhập hàng</h2></div></div>
+            @if (Model.RecentStockReceipts.Count == 0) { <p class="empty-orders">Chưa có lần nhập hàng nào được ghi nhận.</p> }
+            else { <div class="table-scroll"><table class="management-table"><thead><tr><th>Ngày nhập</th><th>Sản phẩm</th><th>Số lượng</th><th>Giá nhập</th><th>Thành tiền</th><th>Nhà cung cấp / mã phiếu</th></tr></thead><tbody>
+            @foreach (var receipt in Model.RecentStockReceipts) { <tr><td>@receipt.ReceivedOn.ToString("dd/MM/yyyy")</td><td>@receipt.ProductName<small>@receipt.ProductSlug</small></td><td>@receipt.Quantity.ToString("N0")</td><td>@receipt.UnitCost.ToString("N0")₫</td><td>@receipt.TotalCost.ToString("N0")₫</td><td>@receipt.Supplier<small>@receipt.Reference</small></td></tr> }
+            </tbody></table></div> }
+        </section>
+        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">SỔ CHI · 50 GẦN NHẤT</span><h2>Lịch sử chi phí vận hành</h2></div></div>
+            @if (Model.RecentOperatingExpenses.Count == 0) { <p class="empty-orders">Chưa có khoản chi nào được ghi nhận.</p> }
+            else { <div class="table-scroll"><table class="management-table"><thead><tr><th>Ngày chi</th><th>Nhóm</th><th>Nội dung</th><th>Đơn vị nhận tiền</th><th>Số tiền</th></tr></thead><tbody>
+            @foreach (var expense in Model.RecentOperatingExpenses) { <tr><td>@expense.SpentOn.ToString("dd/MM/yyyy")</td><td>@expense.Category</td><td>@expense.Description<small>@expense.Notes</small></td><td>@expense.Supplier</td><td>@expense.Amount.ToString("N0")₫</td></tr> }
+            </tbody></table></div> }
+        </section>
+    }
+    else if (tab == "users")
+    {
+        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">NHÂN SỰ · TẠO TÀI KHOẢN</span><h2>Tạo tài khoản nhân viên</h2></div><span class="panel-count">Cấp quyền vận hành</span></div>
+            <p class="panel-help">Tài khoản mới được gán quyền Nhân viên và có thể đăng nhập ngay tại trang Đăng nhập. Mật khẩu phải có chữ hoa, chữ thường, số và ký tự đặc biệt.</p>
+            <form asp-action="CreateEmployee" method="post" class="product-admin-form">
+                <label>Họ và tên<input name="DisplayName" class="portal-input" minlength="2" maxlength="100" autocomplete="name" required /></label>
+                <label>Email đăng nhập<input name="Email" class="portal-input" type="email" maxlength="256" autocomplete="username" required /></label>
+                <label>Số điện thoại<input name="PhoneNumber" class="portal-input" type="tel" maxlength="20" autocomplete="tel" /></label>
+                <label>Mật khẩu tạm thời<input name="Password" class="portal-input" type="password" minlength="8" maxlength="100" autocomplete="new-password" required /></label>
+                <label>Xác nhận mật khẩu<input name="ConfirmPassword" class="portal-input" type="password" minlength="8" maxlength="100" autocomplete="new-password" required /></label>
+                <button class="mini-submit" type="submit">TẠO TÀI KHOẢN NHÂN VIÊN</button>
+            </form>
+        </section>
+        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">PHÂN QUYỀN</span><h2>Tài khoản hệ thống</h2></div><span class="panel-count">@Model.Users.Count tài khoản</span></div>
+            <p class="panel-help">Đăng ký công khai luôn tạo khách hàng. Chỉ quản trị viên mới có thể thay đổi vai trò; không thể tự hạ quyền hoặc hạ quyền quản trị viên cuối cùng.</p>
+            <div class="table-scroll"><table class="management-table"><thead><tr><th>Thành viên</th><th>Email</th><th>Vai trò hiện tại</th><th>Đổi vai trò</th></tr></thead><tbody>
+            @foreach (var user in Model.Users)
+            {
+                <tr><td>@user.DisplayName</td><td>@user.Email</td><td><span class="role-badge">@user.Role</span></td><td><form asp-action="SetRole" method="post" class="inline-action-form"><input type="hidden" name="userId" value="@user.Id" /><select name="role" class="portal-select" aria-label="Vai trò của @user.Email">
+                    @foreach (var role in AppRoles.All) { if (role == user.Role) { <option value="@role" selected>@role</option> } else { <option value="@role">@role</option> } }
+                </select><button class="mini-submit" type="submit">Lưu</button></form></td></tr>
+            }
+            </tbody></table></div>
+        </section>
+    }
+    else if (tab == "orders")
+    {
+        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">HOẠT ĐỘNG GẦN ĐÂY</span><h2>Đơn hàng</h2></div><a asp-controller="Staff" asp-action="Index" class="portal-outline-link">Mở bàn vận hành ↗</a></div>
+            @if (Model.RecentOrders.Count == 0) { <p class="empty-orders">Chưa có đơn hàng.</p> }
+            else { <div class="table-scroll"><table class="management-table"><thead><tr><th>Đơn</th><th>Khách hàng</th><th>Sản phẩm</th><th>Tổng</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+            @foreach (var order in Model.RecentOrders)
+            {
+                <tr><td>#@order.Id.ToString("D6")<small>@order.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></td><td>@order.CustomerName<small>@order.Phone</small><small>@order.Address</small></td><td>@foreach (var item in order.Items) { <span>@item.ProductName · @item.Size × @item.Quantity<br /></span> }</td><td>@order.Total.ToString("N0")₫</td><td><span class="status-pill status-@order.Status.ToLowerInvariant()">@order.Status</span></td><td><a asp-controller="Staff" asp-action="Index" class="text-action">Xử lý</a></td></tr>
+            }
+            </tbody></table></div> }
+        </section>
+    }
+    else
+    {
+        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">CATALOG · CREATE</span><h2>Thêm sản phẩm</h2></div></div>
+            <form asp-action="SaveProduct" method="post" enctype="multipart/form-data" class="product-admin-form">
+                <label>Mã sản phẩm<input name="Slug" class="portal-input" pattern="[A-Za-z0-9-]{2,20}" maxlength="20" placeholder="FS-101" required /></label><label>Tên sản phẩm<input name="Name" class="portal-input" maxlength="120" required /></label><label>Danh mục dữ liệu<select name="CategoryId" class="portal-select" required>@foreach (var category in Model.ProductCategories) { <option value="@category.CategoryId">@category.CategoryName</option> }</select></label><label>Nhóm cửa hàng<select name="Category" class="portal-select"><option value="women">Nữ</option><option value="men">Nam</option><option value="accessories">Phụ kiện</option></select></label><label>Giá (₫)<input name="Price" class="portal-input" type="number" min="1000" step="1000" required /></label>
+                <label>Ảnh sản phẩm (tối đa 150 MB)<input name="ImageFile" class="portal-input product-image-upload" type="file" required /><small>Tên tệp tùy ý. Hỗ trợ JPEG, PNG, WebP, GIF, BMP, TIFF, AVIF và HEIF.</small></label><label>Màu sắc<input name="Color" class="portal-input" maxlength="50" /></label><label>Kích cỡ, cách nhau bằng dấu phẩy<input name="SizesCsv" class="portal-input" value="S,M,L" required /></label><label>Tồn kho<input name="Stock" class="portal-input" type="number" min="0" value="10" required /></label><label class="wide-field">Mô tả<textarea name="Description" class="portal-input" maxlength="500" rows="2"></textarea></label><label class="portal-check"><input name="IsActive" type="checkbox" value="true" checked /> Đang bán</label><button class="mini-submit" type="submit">THÊM SẢN PHẨM</button>
+            </form>
+        </section>
+        <section class="portal-panel management-panel" data-product-search-panel><div class="panel-heading"><div><span class="portal-kicker">CATALOG · INVENTORY</span><h2>Danh mục sản phẩm</h2></div><span class="panel-count">@Model.Products.Count mặt hàng</span></div>
+            <form class="product-search" role="search" data-product-search-form><label for="admin-product-search">Tìm theo tên hoặc mã sản phẩm</label><input id="admin-product-search" class="portal-input" type="search" data-product-search placeholder="Nhập tên hoặc mã sản phẩm..." autocomplete="off" /><button class="mini-submit" type="submit">TÌM</button><span data-product-search-count aria-live="polite"></span></form>
+            <div class="table-scroll"><table class="management-table"><thead><tr><th>Sản phẩm</th><th>Danh mục</th><th>Giá</th><th>Tồn kho</th><th>Trạng thái</th><th>Hành động</th></tr></thead><tbody>
+            @foreach (var product in Model.Products)
+            {
+                <tr data-product-search-row data-search="@product.Name @product.Slug @product.ProductCategory?.CategoryName @product.Category"><td>@product.Name<small>@product.Slug</small></td><td>@product.ProductCategory?.CategoryName · @product.Category</td><td>@product.Price.ToString("N0")₫</td><td>@product.Stock</td><td>@(product.IsActive ? "Đang bán" : "Đã ẩn")</td><td class="table-actions"><details><summary class="text-action">Chỉnh sửa</summary><form asp-action="SaveProduct" method="post" enctype="multipart/form-data" class="product-edit-form"><input type="hidden" name="Slug" value="@product.Slug" /><label>Tên<input name="Name" class="portal-input" value="@product.Name" maxlength="120" required /></label><label>Danh mục dữ liệu<select name="CategoryId" class="portal-select" required>@foreach (var category in Model.ProductCategories) { <option value="@category.CategoryId" selected="@(product.CategoryId == category.CategoryId)">@category.CategoryName</option> }</select></label><label>Nhóm cửa hàng<select name="Category" class="portal-select"><option value="women" selected="@(product.Category == "women")">Nữ</option><option value="men" selected="@(product.Category == "men")">Nam</option><option value="accessories" selected="@(product.Category == "accessories")">Phụ kiện</option></select></label><label>Giá<input name="Price" class="portal-input" type="number" value="@product.Price" min="1000" step="1000" required /></label><label>Ảnh mới (tối đa 150 MB, tùy chọn)<input name="ImageFile" class="portal-input product-image-upload" type="file" /><small>Tên tệp tùy ý; bỏ trống để giữ ảnh hiện tại.</small></label><label>Màu<input name="Color" class="portal-input" value="@product.Color" maxlength="50" /></label><label>Kích cỡ<input name="SizesCsv" class="portal-input" value="@product.SizesCsv" required /></label><label>Tồn kho<input name="Stock" class="portal-input" type="number" value="@product.Stock" min="0" required /></label><label>Mô tả<textarea name="Description" class="portal-input" rows="2">@product.Description</textarea></label><label class="portal-check"><input name="IsActive" type="checkbox" value="true" checked="@(product.IsActive)" /> Đang bán</label><button class="mini-submit" type="submit">Lưu</button></form></details>
+                    @if (product.IsActive) { <form asp-action="DeleteProduct" method="post" class="inline-delete-form"><input type="hidden" name="slug" value="@product.Slug" /><button class="text-action danger-action" type="submit">Ẩn</button></form> }
+                </td></tr>
+            }
+            <tr data-product-search-empty hidden><td colspan="6">Không tìm thấy sản phẩm phù hợp.</td></tr>
+            </tbody></table></div>
+        </section>
+    }
+</section>

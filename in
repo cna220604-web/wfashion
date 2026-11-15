@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>&#x110;&#x103;ng nh&#x1EAD;p — WebApplication1 Studio</title>
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/css/site.css?v=sRkBiuCmlxMjcgpWgpcSOGILeJbFVVp8_0JbQrvkqmE" />
+    <link rel="stylesheet" href="/css/editorial.css?v=g6ZRgV_tzzdvw13NOjcNvLSpZw7ITCiHWdONdwA616E" />
+    <link rel="stylesheet" href="/WebApplication1.styles.css?v=Wa0FTmUOKh-eafKdTRRiQCyCGJxQOHGmX2UCSU9C6tU" />
+</head>
+<body class="portal-layout">
+    <header b-bddmc6yalx class="portal-header">
+        <a class="portal-brand" href="/">W <span b-bddmc6yalx>STUDIO</span></a>
+        <nav b-bddmc6yalx class="portal-nav" aria-label="Điều hướng">
+            <a href="/">Cửa hàng</a>
+                <a href="/Account/Login">Đăng nhập</a>
+                <a href="/Account/Register">Đăng ký</a>
+        </nav>
+    </header>
+    <main b-bddmc6yalx role="main" class="portal-main">
+        <section class="portal-page">
+    <div class="portal-card account-card">
+        <a class="portal-brand" href="/">W <span>STUDIO</span></a>
+        <span class="portal-kicker">CHÀO MỪNG TRỞ LẠI</span>
+        <h1>Đăng nhập</h1>
+        <p>Đăng nhập để quản lý đơn hàng và khám phá phong cách của bạn.</p>
+        <form method="post" action="/Account/Login">
+            <input type="hidden" name="returnUrl" />
+            
+            <label for="Email">Email</label>
+            <input class="portal-input" autocomplete="username" autofocus type="email" data-val="true" data-val-email="The Email field is not a valid e-mail address." data-val-required="The Email field is required." id="Email" name="Email" value="" />
+            <span class="field-error field-validation-valid" data-valmsg-for="Email" data-valmsg-replace="true"></span>
+            <label for="Password">M&#x1EAD;t kh&#x1EA9;u</label>
+            <input class="portal-input" autocomplete="current-password" type="password" data-val="true" data-val-required="The M&#x1EAD;t kh&#x1EA9;u field is required." id="Password" name="Password" />
+            <span class="field-error field-validation-valid" data-valmsg-for="Password" data-valmsg-replace="true"></span>
+            <label class="portal-check"><input type="checkbox" data-val="true" data-val-required="The Ghi nh&#x1EDB; &#x111;&#x103;ng nh&#x1EAD;p field is required." id="RememberMe" name="RememberMe" value="true" /> Ghi nhớ đăng nhập trên thiết bị này</label>
+            <button class="portal-submit" type="submit">ĐĂNG NHẬP <span>→</span></button>
+        <input name="__RequestVerificationToken" type="hidden" value="CfDJ8FC4TRLHWBRIkh4-x_FvhHINnnCdJEmgeLNIgHFIBZuxjYMXDchan03K1jssiErSykEdsQ-KYGx-jX2roxFbGSFveSl8pemg_2MhX1mpqDja9jrv_DRPBNV0Ma32GCl0Sa-XrGLImCzZ67p4PzsMGJ0" /><input name="RememberMe" type="hidden" value="false" /></form>
+        <div class="account-switch">Chưa có tài khoản? <a href="/Account/Register">Tạo tài khoản khách hàng</a></div>
+        <a class="portal-back" href="/">← Quay lại cửa hàng</a>
+    </div>
+</section>
+
+    </main>
+    <footer b-bddmc6yalx class="portal-footer">© 2026 WebApplication1 Studio · Thời trang tuyển chọn</footer>
+    <script src="/lib/jquery/dist/jquery.min.js"></script>
+    <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/site.js?v=hRQyftXiu1lLX2P9Ly9xa4gHJgLeR1uGN5qegUobtGo"></script>
+    
+    <script src="/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+
+
+</body>
+</html>
