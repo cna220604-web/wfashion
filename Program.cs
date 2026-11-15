@@ -28,8 +28,14 @@ var databaseProvider = configuredProvider switch
 };
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpClient("fashion-news", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
 builder.Services.AddSingleton<SupportChatPresence>();
 builder.Services.AddSingleton<ObjectMediaStorage>();
+builder.Services.AddSingleton<FashionMagazineService>();
+builder.Services.AddHostedService(services => services.GetRequiredService<FashionMagazineService>());
 builder.Services.AddScoped<OrderNotificationService>();
 Action<DbContextOptionsBuilder> configureDatabase;
 if (databaseProvider == "sqlite")

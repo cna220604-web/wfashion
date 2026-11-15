@@ -1,0 +1,97 @@
+@model FashionMagazineViewModel
+@{
+    ViewData["Title"] = "Tạp chí thời trang";
+    Layout = null;
+    var currentYear = DateTime.Now.Year;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#773c3d" />
+    <meta name="description" content="Cập nhật tin tức, xu hướng và câu chuyện thời trang mới nhất." />
+    <title>@ViewData["Title"] — W Studio</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/editorial.css" asp-append-version="true" />
+</head>
+<body class="store-page fashion-magazine-page">
+    <div class="announcement-bar">W STUDIO · TẠP CHÍ THỜI TRANG <span>—</span> CẬP NHẬT TIN MỚI</div>
+    <header class="store-header">
+        <a class="store-logo" asp-controller="Home" asp-action="Shop" aria-label="W Studio - Mua sắm">W<span>STUDIO</span></a>
+        <nav class="store-nav" aria-label="Điều hướng cửa hàng">
+            <a asp-controller="Home" asp-action="Shop">Mua sắm</a>
+            <a asp-controller="Home" asp-action="Stylist">Phối đồ</a>
+            <a asp-controller="Home" asp-action="Season">Gợi ý theo mùa</a>
+            <a asp-controller="FashionVideos" asp-action="Index">Video fashion</a>
+            <a asp-controller="Home" asp-action="Magazine" aria-current="page">Tạp chí</a>
+        </nav>
+        <div class="header-actions">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a class="store-account-link" asp-controller="Dashboard" asp-action="Index">TÀI KHOẢN</a>
+            }
+            else
+            {
+                <a class="store-account-link" asp-controller="Account" asp-action="Login">ĐĂNG NHẬP</a>
+            }
+        </div>
+    </header>
+    <main class="fashion-magazine">
+        <section class="magazine-trend-banner" aria-labelledby="magazine-trend-title">
+            <div class="magazine-trend-copy">
+                <span class="magazine-trend-kicker">BẢN ĐỒ PHONG CÁCH · @currentYear</span>
+                <h1 id="magazine-trend-title">Xu hướng thời trang <em>@currentYear</em></h1>
+                <p>Những xu hướng, bộ sưu tập và gương mặt đang tạo dấu ấn trong năm — tuyển chọn từ tin thời trang mới nhất.</p>
+                <a href="#magazine-latest">Khám phá tin mới <span aria-hidden="true">↓</span></a>
+            </div>
+            <div class="magazine-trend-art" aria-hidden="true"><span>@currentYear</span><i></i><b>STYLE<br />IN MOTION</b></div>
+        </section>
+        <section class="magazine-heading" id="magazine-latest">
+            <div><span class="section-kicker">W STUDIO · FASHION JOURNAL</span><h2>Tin mới <em>đáng chú ý</em></h2></div>
+            @if (Model.LastUpdatedAt is DateTimeOffset updatedAt)
+            {
+                <p class="magazine-update">Cập nhật @updatedAt.ToLocalTime().ToString("HH:mm · dd/MM/yyyy") · tự làm mới mỗi 30 phút</p>
+            }
+        </section>
+        @if (Model.Articles.Count > 0)
+        {
+            <section class="magazine-grid" aria-label="Tin thời trang mới nhất">
+                @foreach (var article in Model.Articles)
+                {
+                    <article class="magazine-card">
+                        <a class="magazine-card-image" href="@article.Url" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true">
+                            @if (article.ImageUrl is not null)
+                            {
+                                <img src="@article.ImageUrl" alt="" loading="lazy" />
+                            }
+                            else
+                            {
+                                <span class="magazine-image-fallback" aria-hidden="true">W<br />STUDIO</span>
+                            }
+                        </a>
+                        <div class="magazine-card-content">
+                            <div class="magazine-card-meta"><span class="magazine-source">@article.Source</span><time datetime="@article.PublishedAt.ToString("O")">@article.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy")</time></div>
+                            <h3><a href="@article.Url" target="_blank" rel="noopener noreferrer">@article.Title</a></h3>
+                            @if (!string.IsNullOrWhiteSpace(article.Summary))
+                            {
+                                <p>@article.Summary</p>
+                            }
+                            <a class="magazine-read-link" href="@article.Url" target="_blank" rel="noopener noreferrer">ĐỌC BÀI GỐC <span aria-hidden="true">↗</span></a>
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+        else
+        {
+            <section class="magazine-empty" role="status">
+                <h2>Chưa tải được bản tin</h2>
+                <p>Hiện chưa kết nối được nguồn tin. Vui lòng quay lại sau ít phút.</p>
+            </section>
+        }
+        <p class="magazine-attribution">Nguồn tin: <a href="https://www.elle.vn/thoi-trang/" target="_blank" rel="noopener noreferrer">ELLE Việt Nam</a>, <a href="https://bazaarvietnam.vn/thoi-trang/" target="_blank" rel="noopener noreferrer">Harper’s Bazaar Việt Nam</a> và <a href="https://fashionista.com/" target="_blank" rel="noopener noreferrer">Fashionista</a>. Chọn “Đọc bài gốc” để xem tin đầy đủ tại nguồn.</p>
+    </main>
+    <footer class="portal-footer"><span>© 2026 W Studio · Thời trang tuyển chọn</span></footer>
+</body>
+</html>

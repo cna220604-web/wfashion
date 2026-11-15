@@ -4,10 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using WebApplication1.Data;
 using WebApplication1.Models;
+using WebApplication1.Services;
 
 namespace WebApplication1.Controllers
 {
-    public class HomeController(ApplicationDbContext database, UserManager<ApplicationUser> userManager) : Controller
+    public class HomeController(
+        ApplicationDbContext database,
+        UserManager<ApplicationUser> userManager,
+        FashionMagazineService fashionMagazine) : Controller
     {
         public Task<IActionResult> Index() => RenderStorePageAsync("shop");
 
@@ -16,6 +20,13 @@ namespace WebApplication1.Controllers
         public Task<IActionResult> Stylist() => RenderStorePageAsync("stylist");
 
         public Task<IActionResult> Season() => RenderStorePageAsync("season");
+
+        [HttpGet]
+        public async Task<IActionResult> Magazine(CancellationToken cancellationToken)
+        {
+            var model = await fashionMagazine.GetMagazineAsync(cancellationToken);
+            return View(model);
+        }
 
         private async Task<IActionResult> RenderStorePageAsync(string page)
         {

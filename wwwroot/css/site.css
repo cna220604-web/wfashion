@@ -3479,7 +3479,6 @@ body {
 
 .order-return-details { margin-top: 14px; }
 .order-return-toggle { display: inline-flex; min-height: 38px; align-items: center; padding: 0 15px; border-radius: 999px; color: #fffefa; background: #773c3d; font-size: 10px; font-weight: 600; letter-spacing: .06em; cursor: pointer; list-style: none; }
-.order-return-toggle::-webkit-details-marker { display: none; }
 .order-return-toggle::after { margin-left: 10px; content: "+"; font-size: 16px; }
 .order-return-details[open] .order-return-toggle::after { content: "−"; }
 .order-return-toggle:hover { background: #5e3031; }
