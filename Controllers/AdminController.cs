@@ -19,8 +19,14 @@ public sealed class AdminController(
         configuration["Storage:PersistentPath"] ?? environment.WebRootPath,
         "images",
         "uploads");
+    private string FashionVideoDirectory => Path.Combine(
+        configuration["Storage:PersistentPath"] ?? environment.WebRootPath,
+        "videos",
+        "fashion");
 
     private const long MaxProductImageSize = 150L * 1024 * 1024;
+    private const long MaxFashionVideoSize = 100L * 1024 * 1024;
+    private const long MaxFashionVideoRequestSize = MaxFashionVideoSize + 1024 * 1024;
     private const long MaxProductImageRequestSize = MaxProductImageSize + 1024 * 1024;
     private const decimal MaxRecordedAmount = 9_999_999_999.99m;
     private static readonly string[] ExpenseCategories =
@@ -54,6 +60,7 @@ public sealed class AdminController(
             RecentStockReceipts = await database.StockReceipts.AsNoTracking().OrderByDescending(receipt => receipt.ReceivedOn).ThenByDescending(receipt => receipt.Id).Take(50).ToListAsync(),
             RecentOperatingExpenses = await database.OperatingExpenses.AsNoTracking().OrderByDescending(expense => expense.SpentOn).ThenByDescending(expense => expense.Id).Take(50).ToListAsync(),
             Products = await database.Products.AsNoTracking().OrderBy(product => product.Name).ToListAsync(),
+            FashionVideos = await database.FashionVideos.AsNoTracking().OrderByDescending(video => video.CreatedAtUtc).ToListAsync(),
             Users = userRows,
             RecentOrders = orders
         };
@@ -178,6 +185,93 @@ public sealed class AdminController(
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequestSizeLimit(MaxFashionVideoRequestSize)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxFashionVideoRequestSize)]
+    public async Task<IActionResult> UploadFashionVideo(FashionVideoUploadViewModel model)
+    {
+        if (!ModelState.IsValid || model.VideoFile is not { Length: > 0 } videoFile)
+        {
+            TempData["Error"] = "Chọn video, sản phẩm và nhập chú thích hợp lệ trước khi tải lên.";
+            return RedirectToAction(nameof(Index), new { tab = "videos" });
+        }
+
+        if (videoFile.Length > MaxFashionVideoSize)
+        {
+            TempData["Error"] = "Video không được vượt quá 100 MB.";
+            return RedirectToAction(nameof(Index), new { tab = "videos" });
+        }
+
+        var product = await database.Products.AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Slug == model.ProductSlug && item.IsActive);
+        if (product is null)
+        {
+            TempData["Error"] = "Hãy chọn một sản phẩm đang hiển thị trên cửa hàng.";
+            return RedirectToAction(nameof(Index), new { tab = "videos" });
+        }
+
+        var extension = await GetFashionVideoExtensionAsync(videoFile, HttpContext.RequestAborted);
+        if (extension is null)
+        {
+            TempData["Error"] = "Định dạng video không hợp lệ. Hỗ trợ video MP4 hoặc WebM.";
+            return RedirectToAction(nameof(Index), new { tab = "videos" });
+        }
+
+        var fileName = await SaveFashionVideoAsync(videoFile, extension, HttpContext.RequestAborted);
+        database.FashionVideos.Add(new FashionVideo
+        {
+            VideoFileName = fileName,
+            ProductSlug = product.Slug,
+            Caption = model.Caption.Trim()
+        });
+        try
+        {
+            await database.SaveChangesAsync(HttpContext.RequestAborted);
+        }
+        catch
+        {
+            DeleteFashionVideoFile(fileName);
+            throw;
+        }
+
+        TempData["Notice"] = $"Đã đăng video cho sản phẩm {product.Name}.";
+        return RedirectToAction(nameof(Index), new { tab = "videos" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetFashionVideoVisibility(int id, bool isActive)
+    {
+        var video = await database.FashionVideos.FirstOrDefaultAsync(item => item.Id == id);
+        if (video is null)
+        {
+            return NotFound();
+        }
+
+        video.IsActive = isActive;
+        await database.SaveChangesAsync(HttpContext.RequestAborted);
+        TempData["Notice"] = isActive ? "Video đã được hiển thị trên cửa hàng." : "Video đã được ẩn khỏi cửa hàng.";
+        return RedirectToAction(nameof(Index), new { tab = "videos" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteFashionVideo(int id)
+    {
+        var video = await database.FashionVideos.FirstOrDefaultAsync(item => item.Id == id);
+        if (video is null)
+        {
+            return NotFound();
+        }
+
+        database.FashionVideos.Remove(video);
+        await database.SaveChangesAsync(HttpContext.RequestAborted);
+        DeleteFashionVideoFile(video.VideoFileName);
+        TempData["Notice"] = "Video đã được xóa.";
+        return RedirectToAction(nameof(Index), new { tab = "videos" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     [RequestSizeLimit(MaxProductImageRequestSize)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxProductImageRequestSize)]
     public async Task<IActionResult> SaveProduct(ProductEditViewModel model)
@@ -292,6 +386,81 @@ public sealed class AdminController(
                 ? "Thông tin sản phẩm đã được lưu nhưng máy chủ không nhận được ảnh mới, ảnh cũ vẫn được giữ nguyên. Hãy chọn lại tệp ảnh rồi lưu."
                 : "Sản phẩm đã được lưu.";
         return RedirectToAction(nameof(Index), new { tab = "products" });
+    }
+
+    private static async Task<string?> GetFashionVideoExtensionAsync(IFormFile videoFile, CancellationToken cancellationToken)
+    {
+        var header = new byte[12];
+        await using var stream = videoFile.OpenReadStream();
+        var bytesRead = 0;
+        while (bytesRead < header.Length)
+        {
+            var read = await stream.ReadAsync(header.AsMemory(bytesRead), cancellationToken);
+            if (read == 0)
+            {
+                break;
+            }
+
+            bytesRead += read;
+        }
+
+        if (bytesRead >= 12 && header.AsSpan(4, 4).SequenceEqual("ftyp"u8))
+        {
+            var brand = header.AsSpan(8, 4);
+            if (brand.SequenceEqual("isom"u8) || brand.SequenceEqual("iso2"u8) ||
+                brand.SequenceEqual("mp41"u8) || brand.SequenceEqual("mp42"u8) ||
+                brand.SequenceEqual("avc1"u8) || brand.SequenceEqual("M4V "u8) ||
+                brand.SequenceEqual("MSNV"u8))
+            {
+                return ".mp4";
+            }
+        }
+
+        if (bytesRead >= 4 && header.AsSpan(0, 4).SequenceEqual(new byte[] { 0x1A, 0x45, 0xDF, 0xA3 }))
+        {
+            return ".webm";
+        }
+
+        return null;
+    }
+
+    private async Task<string> SaveFashionVideoAsync(IFormFile videoFile, string extension, CancellationToken cancellationToken)
+    {
+        var fileName = $"{Guid.NewGuid():N}{extension}";
+        Directory.CreateDirectory(FashionVideoDirectory);
+        var destination = Path.Combine(FashionVideoDirectory, fileName);
+        try
+        {
+            await using var stream = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true);
+            await videoFile.CopyToAsync(stream, cancellationToken);
+            return fileName;
+        }
+        catch
+        {
+            DeleteFashionVideoFile(fileName);
+            throw;
+        }
+    }
+
+    private void DeleteFashionVideoFile(string fileName)
+    {
+        if (!System.Text.RegularExpressions.Regex.IsMatch(fileName, "^[a-f0-9]{32}\\.(mp4|webm)$"))
+        {
+            return;
+        }
+
+        try
+        {
+            System.IO.File.Delete(Path.Combine(FashionVideoDirectory, fileName));
+        }
+        catch (IOException exception)
+        {
+            logger.LogWarning(exception, "Unable to remove fashion video file {VideoFileName}", fileName);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            logger.LogWarning(exception, "Unable to remove fashion video file {VideoFileName}", fileName);
+        }
     }
 
     private async Task<string?> GetImageExtensionAsync(IFormFile imageFile, CancellationToken cancellationToken)

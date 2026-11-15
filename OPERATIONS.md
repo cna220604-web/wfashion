@@ -23,7 +23,7 @@
 
 ## Sao lưu và khôi phục
 
-- W Studio uses one SQLite database for the storefront, customer accounts, admin catalog, staff inventory, orders, reviews, and support chat. For a durable non-demo deployment, back up SQLite with SQLite Online Backup API or stop the app before copying the database; do not copy only the main file while WAL is active. Back up uploaded product images and customer avatars alongside the database.
+- W Studio uses one SQLite database for the storefront, customer accounts, admin catalog, staff inventory, orders, reviews, fashion-video metadata, and support chat. For a durable non-demo deployment, back up SQLite with SQLite Online Backup API or stop the app before copying the database; do not copy only the main file while WAL is active. Back up uploaded product images, customer avatars, and `videos/fashion` alongside the database.
 - Render Free has ephemeral storage and can reset the SQLite database and uploaded files on sleep, restart, or redeploy. This is acceptable only for a demo; do not store important customer data there.
 - Đánh giá sản phẩm được tạo thêm idempotent khi ứng dụng khởi động, chỉ dành cho sản phẩm thuộc đơn đã giao; mỗi sản phẩm chỉ được đánh giá một lần trong một đơn hàng. Nhân viên và quản trị viên có thể phản hồi/cập nhật phản hồi; khách xem phản hồi trong lịch sử đơn hàng của mình.
 - Định kỳ thử khôi phục database cùng ảnh upload vào môi trường riêng để `ImageId`/`AvatarImageId` không trỏ tới file thiếu.

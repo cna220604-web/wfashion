@@ -29,10 +29,18 @@ namespace WebApplication1.Controllers
                 .ToDictionaryAsync(
                     summary => summary.ProductSlug,
                     summary => new ProductReviewSummary(summary.AverageRating, summary.ReviewCount));
+            var fashionVideos = await (
+                from video in database.FashionVideos.AsNoTracking().Where(video => video.IsActive)
+                join product in database.Products.AsNoTracking().Where(product => product.IsActive)
+                    on video.ProductSlug equals product.Slug
+                orderby video.CreatedAtUtc descending
+                select new StorefrontFashionVideo(video.Id, video.VideoFileName, product.Slug, product.Name, product.Price, video.Caption))
+                .ToListAsync();
             var customer = User.IsInRole(AppRoles.Customer) ? await userManager.GetUserAsync(User) : null;
             return View(new StorefrontViewModel
             {
                 Products = products,
+                FashionVideos = fashionVideos,
                 Reviews = reviewSummaries,
                 CustomerName = customer?.DisplayName ?? string.Empty,
                 CustomerPhone = customer?.PhoneNumber ?? string.Empty,

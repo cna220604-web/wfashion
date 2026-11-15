@@ -1268,6 +1268,28 @@ const loadCurrentSupportChat = async () => {
     }
 };
 
+const fashionVideoFeed = document.querySelector('.fashion-video-feed');
+if (fashionVideoFeed) {
+    fashionVideoFeed.addEventListener('click', event => {
+        const productButton = event.target.closest('[data-product]');
+        if (productButton) openProduct(productButton.dataset.product);
+    });
+
+    if ('IntersectionObserver' in window) {
+        const videoObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                const video = entry.target;
+                if (entry.isIntersecting) {
+                    video.play().catch(() => { video.controls = true; });
+                } else {
+                    video.pause();
+                }
+            });
+        }, { threshold: 0.65 });
+        fashionVideoFeed.querySelectorAll('.fashion-video-player').forEach(video => videoObserver.observe(video));
+    }
+}
+
 if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const revealTargets = document.querySelectorAll([
         '.hero-copy > .section-kicker',

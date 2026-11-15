@@ -14,6 +14,7 @@ public static class DatabaseSeeder
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
         await database.Database.EnsureCreatedAsync();
+        await EnsureFashionVideoSchemaAsync(database);
         await EnsureUserProfileSchemaAsync(database);
         await EnsureOrderReturnSchemaAsync(database);
         await EnsureSupportChatSchemaAsync(database);
@@ -171,6 +172,21 @@ public static class DatabaseSeeder
             await database.Database.CloseConnectionAsync();
         }
     }
+
+    private static Task EnsureFashionVideoSchemaAsync(ApplicationDbContext database) => database.Database.ExecuteSqlRawAsync("""
+        CREATE TABLE IF NOT EXISTS "FashionVideos" (
+            "Id" INTEGER NOT NULL CONSTRAINT "PK_FashionVideos" PRIMARY KEY AUTOINCREMENT,
+            "VideoFileName" TEXT NOT NULL,
+            "ProductSlug" TEXT NOT NULL,
+            "Caption" TEXT NOT NULL,
+            "IsActive" INTEGER NOT NULL,
+            "CreatedAtUtc" TEXT NOT NULL,
+            CONSTRAINT "FK_FashionVideos_Products_ProductSlug"
+                FOREIGN KEY ("ProductSlug") REFERENCES "Products" ("Slug") ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS "IX_FashionVideos_IsActive_CreatedAtUtc"
+            ON "FashionVideos" ("IsActive", "CreatedAtUtc");
+        """);
 
     private static async Task EnsureProductReviewSchemaAsync(ApplicationDbContext database)
     {

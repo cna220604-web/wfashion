@@ -3958,3 +3958,55 @@ body.store-page {
   }
 }
 
+.store-page .fashion-videos {
+  padding: clamp(32px, 5vw, 64px) clamp(18px, 6vw, 88px);
+  color: #f8f1e9;
+  background: linear-gradient(130deg, #211b19, #533536 62%, #302725);
+}
+
+.store-page .fashion-videos-heading {
+  display: flex;
+  max-width: 1120px;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 auto 20px;
+}
+
+.store-page .fashion-videos-heading h2 {
+  margin: 8px 0;
+  font-size: clamp(26px, 4vw, 42px);
+}
+
+.store-page .fashion-videos-heading h2 em { color: #d7b485; font-style: normal; }
+.store-page .fashion-videos-heading p { margin: 0; color: rgb(248 241 233 / 75%); font-size: 14px; }
+.store-page .fashion-video-swipe-hint { color: #d7b485; font-size: 10px; letter-spacing: .12em; white-space: nowrap; }
+.store-page .fashion-videos-empty { max-width: 1120px; margin: auto; padding: 28px; border: 1px solid rgb(215 180 133 / 28%); border-radius: 16px; color: rgb(248 241 233 / 75%); text-align: center; }
+.store-page .fashion-video-feed { display: grid; max-height: min(78svh, 820px); justify-items: center; gap: 14px; overflow-y: auto; overscroll-behavior-y: contain; scroll-snap-type: y mandatory; scrollbar-color: rgb(215 180 133 / 50%) transparent; }
+.store-page .fashion-video-card { position: relative; width: min(100%, 430px); height: min(78svh, 820px); min-height: 420px; overflow: hidden; border: 1px solid rgb(215 180 133 / 28%); border-radius: 22px; background: #171312; scroll-snap-align: start; }
+.store-page .fashion-video-player { display: block; width: 100%; height: 100%; object-fit: cover; background: #171312; }
+.store-page .fashion-video-overlay { position: absolute; right: 0; bottom: 0; left: 0; display: grid; gap: 12px; padding: 70px 16px 18px; background: linear-gradient(transparent, rgb(17 13 12 / 88%)); pointer-events: none; }
+.store-page .fashion-video-caption { color: #fff; font-size: 15px; font-weight: 600; line-height: 1.45; text-shadow: 0 1px 5px rgb(0 0 0 / 55%); }
+.store-page .fashion-video-product { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid rgb(215 180 133 / 38%); border-radius: 13px; color: #302725; background: #f1e5d5; text-align: left; pointer-events: auto; cursor: pointer; }
+.store-page .fashion-video-product span { overflow: hidden; font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.store-page .fashion-video-product strong { color: #773c3d; font-size: 12px; }
+.store-page .fashion-video-admin-list { display: grid; gap: 12px; }
+.store-page .fashion-video-admin-card { display: grid; grid-template-columns: minmax(110px, 180px) minmax(0, 1fr); align-items: center; gap: 16px; padding: 12px; border: 1px solid rgb(119 60 61 / 12%); border-radius: 14px; background: #fffaf3; }
+.store-page .fashion-video-admin-card > video { width: 100%; max-height: 260px; aspect-ratio: 9 / 16; border-radius: 9px; background: #211b19; object-fit: cover; }
+.store-page .fashion-video-admin-card p { margin: 7px 0; color: #62594f; }
+.store-page .fashion-video-admin-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+.store-page .fashion-video-admin-actions form { margin: 0; }
+
+@media (max-width: 680px) {
+  .store-page .store-nav { flex-wrap: nowrap; gap: 12px; overflow-x: auto; }
+  .store-page .store-nav a { flex: 0 0 auto; }
+  .store-page .fashion-videos { padding: 24px 14px; }
+  .store-page .fashion-videos-heading { align-items: flex-start; margin-bottom: 12px; }
+  .store-page .fashion-videos-heading h2 { font-size: 26px; }
+  .store-page .fashion-videos-heading p { font-size: 12px; }
+  .store-page .fashion-video-swipe-hint { display: none; }
+  .store-page .fashion-video-feed { max-height: 72svh; gap: 10px; }
+  .store-page .fashion-video-card { width: min(100%, 390px); height: 72svh; min-height: 390px; border-radius: 16px; }
+  .store-page .fashion-video-admin-card { grid-template-columns: 90px minmax(0, 1fr); gap: 10px; }
+}
+

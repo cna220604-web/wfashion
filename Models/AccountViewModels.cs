@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace WebApplication1.Models;
 
@@ -165,6 +166,18 @@ public sealed class ProductReviewReplyViewModel
 
     [Required, StringLength(1000, MinimumLength = 1, ErrorMessage = "Phản hồi cần từ 1 đến 1.000 ký tự.")]
     public string Reply { get; set; } = string.Empty;
+}
+
+public sealed class FashionVideoUploadViewModel
+{
+    [Required, StringLength(80)]
+    public string ProductSlug { get; set; } = string.Empty;
+
+    [Required, StringLength(180)]
+    public string Caption { get; set; } = string.Empty;
+
+    [Required]
+    public IFormFile? VideoFile { get; set; }
 }
 
 public sealed class ProductEditViewModel

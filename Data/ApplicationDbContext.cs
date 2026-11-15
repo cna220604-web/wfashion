@@ -8,6 +8,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<FashionVideo> FashionVideos => Set<FashionVideo>();
     public DbSet<CustomerOrder> Orders => Set<CustomerOrder>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
@@ -21,6 +22,12 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         base.OnModelCreating(builder);
 
         builder.Entity<Product>().Property(product => product.Price).HasPrecision(12, 2);
+        builder.Entity<FashionVideo>().HasIndex(video => new { video.IsActive, video.CreatedAtUtc });
+        builder.Entity<FashionVideo>().HasOne<Product>()
+            .WithMany()
+            .HasForeignKey(video => video.ProductSlug)
+            .HasPrincipalKey(product => product.Slug)
+            .OnDelete(DeleteBehavior.Cascade);
         builder.Entity<StockReceipt>().ToTable("StockReceipts");
         builder.Entity<StockReceipt>().Property(receipt => receipt.UnitCost).HasPrecision(12, 2);
         builder.Entity<StockReceipt>().Property(receipt => receipt.ProductSlug).HasMaxLength(20);

@@ -112,6 +112,7 @@ if (!string.IsNullOrWhiteSpace(persistentStoragePath))
 {
     Directory.CreateDirectory(Path.Combine(persistentStoragePath, "images", "uploads"));
     Directory.CreateDirectory(Path.Combine(persistentStoragePath, "images", "avatars"));
+    Directory.CreateDirectory(Path.Combine(persistentStoragePath, "videos", "fashion"));
 }
 await DatabaseSeeder.InitializeAsync(app.Services, app.Configuration, app.Logger);
 
@@ -128,11 +129,14 @@ var staticFileTypes = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentT
 staticFileTypes.Mappings[".avif"] = "image/avif";
 staticFileTypes.Mappings[".heic"] = "image/heic";
 staticFileTypes.Mappings[".tiff"] = "image/tiff";
+staticFileTypes.Mappings[".mp4"] = "video/mp4";
+staticFileTypes.Mappings[".webm"] = "video/webm";
 app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = staticFileTypes });
 if (!string.IsNullOrWhiteSpace(persistentStoragePath))
 {
     var uploadsPath = Path.GetFullPath(Path.Combine(persistentStoragePath, "images", "uploads"));
     var avatarsPath = Path.GetFullPath(Path.Combine(persistentStoragePath, "images", "avatars"));
+    var fashionVideosPath = Path.GetFullPath(Path.Combine(persistentStoragePath, "videos", "fashion"));
     app.UseStaticFiles(new StaticFileOptions
     {
         FileProvider = new PhysicalFileProvider(uploadsPath),
@@ -143,6 +147,12 @@ if (!string.IsNullOrWhiteSpace(persistentStoragePath))
     {
         FileProvider = new PhysicalFileProvider(avatarsPath),
         RequestPath = "/images/avatars",
+        ContentTypeProvider = staticFileTypes
+    });
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(fashionVideosPath),
+        RequestPath = "/videos/fashion",
         ContentTypeProvider = staticFileTypes
     });
 }

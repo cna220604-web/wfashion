@@ -3,6 +3,7 @@ namespace WebApplication1.Models;
 public sealed class StorefrontViewModel
 {
     public IReadOnlyList<Product> Products { get; init; } = [];
+    public IReadOnlyList<StorefrontFashionVideo> FashionVideos { get; init; } = [];
     public IReadOnlyDictionary<string, ProductReviewSummary> Reviews { get; init; } = new Dictionary<string, ProductReviewSummary>();
     public string CustomerName { get; init; } = string.Empty;
     public string CustomerPhone { get; init; } = string.Empty;
@@ -10,6 +11,8 @@ public sealed class StorefrontViewModel
 }
 
 public sealed record ProductReviewSummary(double AverageRating, int ReviewCount);
+
+public sealed record StorefrontFashionVideo(int Id, string VideoFileName, string ProductSlug, string ProductName, decimal ProductPrice, string Caption);
 
 public sealed class AdminDashboardViewModel
 {
@@ -24,6 +27,7 @@ public sealed class AdminDashboardViewModel
     public IReadOnlyList<StockReceipt> RecentStockReceipts { get; init; } = [];
     public IReadOnlyList<OperatingExpense> RecentOperatingExpenses { get; init; } = [];
     public IReadOnlyList<Product> Products { get; init; } = [];
+    public IReadOnlyList<FashionVideo> FashionVideos { get; init; } = [];
     public IReadOnlyList<AdminUserRow> Users { get; init; } = [];
     public IReadOnlyList<CustomerOrder> RecentOrders { get; init; } = [];
 }
