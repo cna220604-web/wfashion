@@ -3471,13 +3471,15 @@ body.store-page {
   background: #302725;
 }
 .admin-portal .dashboard-heading h1,
-.staff-portal .dashboard-heading h1 { color: #f8f1e9; font-size: clamp(32px, 3.6vw, 46px); }
+.staff-portal .dashboard-heading h1 { color: #302725; font-size: clamp(32px, 3.6vw, 46px); }
 .admin-portal .dashboard-heading p,
 .staff-portal .dashboard-heading p,
-.admin-portal .panel-help,
-.staff-portal .panel-heading p { color: rgb(248 241 233 / 82%); font-size: 15px; line-height: 1.65; }
-.admin-portal .portal-kicker,
-.staff-portal .portal-kicker { color: #d7b485; font-size: 12px; }
+.admin-portal > .dashboard-page > .panel-help,
+.staff-portal > .dashboard-page > .panel-help { color: #514842; font-size: 15px; line-height: 1.65; }
+.admin-portal .dashboard-heading .portal-kicker,
+.staff-portal .dashboard-heading .portal-kicker,
+.admin-portal .panel-heading .portal-kicker,
+.staff-portal .panel-heading .portal-kicker { color: #774b2b; font-size: 12px; }
 .admin-portal .role-badge,
 .admin-portal .panel-count,
 .staff-portal .role-badge,
@@ -4299,7 +4301,7 @@ body.portal-layout {
 
 .admin-portal .dashboard-tabs a,
 .staff-portal .dashboard-tabs a {
-  color: #f8f1e9;
+  color: #40372f;
   font-size: 15px;
 }
 .admin-portal .dashboard-tabs a.is-active,
