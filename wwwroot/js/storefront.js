@@ -771,9 +771,16 @@ if (pendingPurchase && typeof pendingPurchase.id === 'string' && typeof pendingP
     }
     saveStore('studio.pending-purchase', null);
 }
-const requestedProductId = new URLSearchParams(window.location.search).get('product');
+const storeQuery = new URLSearchParams(window.location.search);
+const requestedProductId = storeQuery.get('product');
+const returnToFashionVideo = storeQuery.get('fromFashionVideo') === '1';
 if (requestedProductId && products.some(product => product.id === requestedProductId)) {
     requestAnimationFrame(() => openProduct(requestedProductId));
+}
+if (returnToFashionVideo) {
+    document.getElementById('product-dialog').addEventListener('close', () => {
+        window.location.assign('/FashionVideos?resume=1');
+    }, { once: true });
 }
 document.getElementById('cart-empty').querySelector('.text-link').addEventListener('click', () => document.getElementById('collection').scrollIntoView({ behavior: 'smooth' }));
 document.getElementById('products-previous').addEventListener('click', () => {

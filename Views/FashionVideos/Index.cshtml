@@ -47,7 +47,7 @@
                             <h2>@video.ProductName</h2>
                             <p>@video.Caption</p>
                             <div class="fashion-video-price">@video.ProductPrice.ToString("N0")<span>₫</span></div>
-                            <a class="fashion-video-product" href="@Url.Action("Index", "Home", new { product = video.ProductSlug })">
+                            <a class="fashion-video-product" href="@Url.Action("Index", "Home", new { product = video.ProductSlug, fromFashionVideo = "1" })">
                                 <span>Xem sản phẩm</span><strong>KHÁM PHÁ LOOK <b aria-hidden="true">↗</b></strong>
                             </a>
                             <span class="fashion-video-scroll-hint"><i></i> CUỘN ĐỂ KHÁM PHÁ THÊM</span>
