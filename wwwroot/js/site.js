@@ -62,6 +62,11 @@ document.querySelectorAll('[data-profile-form]').forEach(form => {
     });
 });
 
+document.addEventListener('click', event => {
+    const closeButton = event.target.closest('[data-close-admin-edit]');
+    if (closeButton) closeButton.closest('details')?.removeAttribute('open');
+});
+
 document.querySelectorAll('[data-avatar-trigger]').forEach(button => {
     const fileInput = button.closest('.profile-avatar-row')?.querySelector('[data-avatar-input]');
     if (!fileInput) return;

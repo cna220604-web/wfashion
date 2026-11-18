@@ -6315,9 +6315,181 @@ body.portal-layout {
   }
 }
 
+@media (min-width: 761px) {
+  .admin-portal .admin-dashboard {
+    display: grid !important;
+    width: min(1480px, 100%);
+    height: auto !important;
+    min-height: calc(100vh - 146px);
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    align-items: start;
+    gap: 18px;
+    overflow: visible !important;
+    padding-top: 24px;
+    padding-bottom: 36px;
+  }
+
+  .admin-portal .admin-dashboard > .dashboard-heading,
+  .admin-portal .admin-dashboard > .dashboard-tabs,
+  .admin-portal .admin-dashboard > .portal-alert,
+  .admin-portal .admin-dashboard > .metric-grid {
+    grid-column: 1 / -1;
+  }
+
+  .admin-portal .admin-dashboard > .portal-panel,
+  .admin-portal .admin-dashboard > .admin-finance-forms > .portal-panel {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    height: auto !important;
+    min-height: 0;
+    flex: none !important;
+    flex-direction: column;
+    overflow: visible !important;
+    margin: 0;
+  }
+
+  .admin-portal .admin-dashboard > .admin-finance-forms {
+    display: contents;
+  }
+
+  .admin-portal .admin-dashboard-products {
+    grid-template-columns: minmax(250px, 0.34fr) minmax(0, 0.66fr);
+  }
+
+  .admin-portal .admin-dashboard-partners,
+  .admin-portal .admin-dashboard-users,
+  .admin-portal .admin-dashboard-videos,
+  .admin-portal .admin-dashboard-promotions {
+    grid-template-columns: minmax(260px, 0.34fr) minmax(0, 0.66fr);
+  }
+
+  .admin-portal .admin-dashboard-expenses {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-portal .admin-dashboard .admin-create-panel .product-admin-form,
+  .admin-portal .admin-dashboard .admin-form-disclosure .product-admin-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-portal .admin-dashboard .admin-form-disclosure {
+    display: grid;
+    gap: 14px;
+  }
+
+  .admin-portal .admin-dashboard .admin-form-disclosure > summary {
+    justify-self: start;
+    cursor: pointer;
+  }
+
+  .admin-portal .admin-dashboard .table-scroll {
+    width: 100%;
+    max-height: min(68vh, 700px) !important;
+    flex: 0 1 auto !important;
+    overflow: auto !important;
+  }
+
+  .admin-portal .admin-dashboard .management-table {
+    width: 100%;
+  }
+
+  .admin-portal .admin-dashboard .management-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .admin-portal .admin-dashboard .fashion-video-admin-list,
+  .admin-portal .admin-dashboard .admin-user-group .table-scroll {
+    max-height: min(68vh, 700px);
+    overflow: auto;
+  }
+
+  .admin-portal .admin-dashboard .table-actions details[open]::before {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    background: rgb(25 22 20 / 55%);
+    content: "";
+  }
+
+  .admin-portal .admin-dashboard .table-actions details[open] > form {
+    position: fixed;
+    z-index: 1001;
+    top: 50%;
+    left: 50%;
+    width: min(720px, calc(100vw - 32px));
+    max-height: min(84vh, 820px);
+    overflow: auto;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    padding: 24px;
+    background: #fffdfa;
+    box-shadow: 0 18px 70px rgb(25 22 20 / 30%);
+  }
+
+  .admin-portal .admin-dashboard .admin-edit-close {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    grid-column: 1 / -1;
+    justify-self: end;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    color: #2f2924;
+    background: #eee9e1;
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  .staff-portal .dashboard-page {
+    display: block !important;
+    width: min(1480px, 100%);
+    height: auto !important;
+    min-height: calc(100vh - 146px);
+    overflow: visible !important;
+    padding-top: 28px;
+    padding-bottom: 36px;
+  }
+
+  .staff-portal .dashboard-page > .portal-panel {
+    display: flex;
+    height: auto !important;
+    min-height: 0;
+    overflow: visible !important;
+    margin: 16px 0;
+  }
+
+  .staff-portal .table-scroll {
+    max-height: min(68vh, 700px) !important;
+    flex: 0 1 auto !important;
+    overflow: auto !important;
+  }
+
+  .staff-portal .staff-feedback-list {
+    max-height: min(68vh, 700px);
+    overflow-y: auto;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .admin-portal .admin-dashboard-products,
+  .admin-portal .admin-dashboard-partners,
+  .admin-portal .admin-dashboard-users,
+  .admin-portal .admin-dashboard-videos,
+  .admin-portal .admin-dashboard-promotions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 760px) {
   .admin-portal .admin-dashboard {
     display: block !important;
+    width: 100%;
     height: auto !important;
     min-height: 0;
     overflow: visible !important;
@@ -6335,5 +6507,14 @@ body.portal-layout {
   .staff-portal .dashboard-page .table-scroll {
     max-height: 58vh !important;
     overflow: auto !important;
+  }
+
+  .admin-portal .admin-dashboard .admin-form-disclosure .product-admin-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-portal .admin-dashboard .table-actions details[open] > form {
+    width: calc(100vw - 24px);
+    max-height: 88vh;
   }
 }
