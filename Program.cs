@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
@@ -111,6 +112,52 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
+
+var authentication = builder.Services.AddAuthentication();
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+if (string.IsNullOrWhiteSpace(googleClientId) != string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    throw new InvalidOperationException("Configure both Authentication:Google:ClientId and Authentication:Google:ClientSecret to enable Google sign-in.");
+}
+if (!string.IsNullOrWhiteSpace(googleClientId))
+{
+    authentication.AddGoogle(options =>
+    {
+        options.ClientId = googleClientId;
+        options.ClientSecret = googleClientSecret!;
+        options.Scope.Add("email");
+        options.Events.OnCreatingTicket = context =>
+        {
+            if (context.User.TryGetProperty("email_verified", out var emailVerified)
+                && emailVerified.ValueKind == System.Text.Json.JsonValueKind.True)
+            {
+                context.Identity?.AddClaim(new Claim("email_verified", "true"));
+            }
+
+            return Task.CompletedTask;
+        };
+    });
+}
+
+var facebookAppId = builder.Configuration["Authentication:Facebook:AppId"];
+var facebookAppSecret = builder.Configuration["Authentication:Facebook:AppSecret"];
+if (string.IsNullOrWhiteSpace(facebookAppId) != string.IsNullOrWhiteSpace(facebookAppSecret))
+{
+    throw new InvalidOperationException("Configure both Authentication:Facebook:AppId and Authentication:Facebook:AppSecret to enable Facebook sign-in.");
+}
+if (!string.IsNullOrWhiteSpace(facebookAppId))
+{
+    authentication.AddFacebook(options =>
+    {
+        options.AppId = facebookAppId;
+        options.AppSecret = facebookAppSecret!;
+        options.Scope.Add("email");
+        options.Fields.Add("name");
+        options.Fields.Add("email");
+    });
+}
+
 builder.Services.AddAntiforgery(options => options.HeaderName = "RequestVerificationToken");
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -169,6 +216,10 @@ var app = builder.Build();
 app.Logger.LogInformation("Using {DatabaseProvider} database", databaseProvider);
 var objectStorage = app.Services.GetRequiredService<ObjectMediaStorage>();
 app.Logger.LogInformation("Durable object storage is {ObjectStorageStatus}", objectStorage.IsConfigured ? "enabled" : "not configured; media uses local storage");
+if (app.Environment.IsProduction() && !objectStorage.IsConfigured && !app.Configuration.GetValue<bool>("Storage:AllowLocalVideoStorage"))
+{
+    app.Logger.LogWarning("Fashion video uploads are disabled because durable object storage is not configured. Configure Storage:S3 or explicitly enable local video storage on a persistent volume.");
+}
 var persistentStoragePath = app.Configuration["Storage:PersistentPath"];
 if (!string.IsNullOrWhiteSpace(persistentStoragePath))
 {

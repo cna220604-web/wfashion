@@ -4989,3 +4989,143 @@ body.portal-layout {
       transition: none;
     }
   }
+
+.external-login-options {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.external-login-options > span {
+  color: #766d67;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-align: center;
+}
+
+.external-login-options form {
+  margin: 0;
+}
+
+.external-login-button {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 16px;
+  border: 1px solid #ded5c9;
+  border-radius: 12px;
+  color: #302725;
+  background: #fffdf9;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease, transform .2s ease;
+}
+
+.external-login-button:hover {
+  transform: translateY(-1px);
+  border-color: #bb8b52;
+  background: #fbf3e8;
+}
+
+.admin-portal .stock-receipt-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-portal .stock-receipt-form > .wide-field,
+.admin-portal .stock-receipt-lines,
+.admin-portal .stock-bulk-feedback,
+.admin-portal .stock-receipt-summary {
+  grid-column: 1 / -1;
+}
+
+.admin-portal .stock-receipt-lines {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-portal .stock-receipt-line {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) minmax(90px, .55fr) minmax(150px, 1fr) minmax(110px, .8fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid rgb(119 60 61 / 12%);
+  border-radius: 12px;
+  background: #fffaf3;
+}
+
+.admin-portal .stock-receipt-line label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  color: #40372f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-portal .stock-line-total {
+  display: grid;
+  gap: 5px;
+  color: #62594f;
+  font-size: 11px;
+}
+
+.admin-portal .stock-line-total output,
+.admin-portal .stock-receipt-summary strong {
+  color: #773c3d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-portal .stock-receipt-summary {
+  padding: 12px 0;
+  border-top: 1px solid rgb(119 60 61 / 14%);
+  color: #40372f;
+  text-align: right;
+}
+
+.admin-portal .stock-bulk-feedback {
+  min-height: 1.4em;
+  margin: 0;
+  color: #533536;
+  font-size: 13px;
+}
+
+.admin-portal .stock-bulk-input {
+  min-height: 90px;
+  font-family: Consolas, monospace;
+}
+
+.admin-portal .stock-product-template {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .admin-portal .stock-receipt-line {
+    grid-template-columns: minmax(0, 1fr) minmax(100px, .6fr);
+  }
+
+  .admin-portal .stock-receipt-line label:first-child,
+  .admin-portal .stock-receipt-line label:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-portal .stock-receipt-line {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-portal .stock-receipt-line label:first-child,
+  .admin-portal .stock-receipt-line label:nth-child(3) {
+    grid-column: auto;
+  }
+
+  .admin-portal .stock-receipt-summary {
+    text-align: left;
+  }
+}

@@ -40,6 +40,9 @@ public sealed class AdminController(
 
     public async Task<IActionResult> Index()
     {
+        ViewData["VideoStorageWarning"] = environment.IsProduction()
+            && !objectStorage.IsConfigured
+            && !configuration.GetValue<bool>("Storage:AllowLocalVideoStorage");
         var users = await userManager.Users.OrderBy(user => user.Email).ToListAsync();
         var userRows = new List<AdminUserRow>();
         foreach (var user in users)
@@ -73,48 +76,68 @@ public sealed class AdminController(
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RecordStockReceipt(StockReceiptViewModel model)
+    public async Task<IActionResult> RecordStockReceipt(StockReceiptBatchViewModel model)
     {
-        if (!ModelState.IsValid || model.ReceivedOn == default || model.ReceivedOn > DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)) ||
-            model.Quantity * model.UnitCost > MaxRecordedAmount)
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+        if (!ModelState.IsValid || model.Items.Count == 0 || model.ReceivedOn == default || model.ReceivedOn > today ||
+            model.Items.Any(item => item.Quantity * item.UnitCost > MaxRecordedAmount))
         {
-            TempData["Error"] = "Thông tin nhập hàng không hợp lệ. Kiểm tra sản phẩm, số lượng, đơn giá và ngày nhập (không vượt quá hôm nay).";
+            TempData["Error"] = "Thông tin nhập hàng không hợp lệ. Kiểm tra sản phẩm, số lượng, giá vốn và ngày nhập (không vượt quá hôm nay).";
             return RedirectToAction(nameof(Index), new { tab = "expenses" });
         }
 
-        var product = await database.Products.AsNoTracking().FirstOrDefaultAsync(item => item.Slug == model.ProductSlug);
-        if (product is null)
+        var duplicateProduct = model.Items
+            .GroupBy(item => item.ProductSlug.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Any(group => group.Count() > 1);
+        if (duplicateProduct)
         {
-            TempData["Error"] = "Không tìm thấy sản phẩm cần nhập kho.";
+            TempData["Error"] = "Mỗi sản phẩm chỉ được xuất hiện một lần trong cùng phiếu nhập. Gộp số lượng vào một dòng rồi thử lại.";
             return RedirectToAction(nameof(Index), new { tab = "expenses" });
         }
 
+        var productSlugs = model.Items.Select(item => item.ProductSlug.Trim()).ToArray();
+        var products = await database.Products.AsNoTracking()
+            .Where(product => productSlugs.Contains(product.Slug))
+            .ToDictionaryAsync(product => product.Slug, StringComparer.OrdinalIgnoreCase, HttpContext.RequestAborted);
+        if (products.Count != productSlugs.Length)
+        {
+            TempData["Error"] = "Không tìm thấy một hoặc nhiều sản phẩm trong phiếu nhập. Tải lại trang và kiểm tra danh sách sản phẩm.";
+            return RedirectToAction(nameof(Index), new { tab = "expenses" });
+        }
+
+        var recordedBy = userManager.GetUserId(User)
+            ?? throw new InvalidOperationException("The authenticated administrator has no user identifier.");
         await using var transaction = await database.Database.BeginTransactionAsync(HttpContext.RequestAborted);
-        var updatedRows = await database.Products
-            .Where(item => item.Slug == model.ProductSlug && item.Stock <= 100000 - model.Quantity)
-            .ExecuteUpdateAsync(updates => updates.SetProperty(item => item.Stock, item => item.Stock + model.Quantity), HttpContext.RequestAborted);
-        if (updatedRows != 1)
+        foreach (var item in model.Items)
         {
-            await transaction.RollbackAsync(HttpContext.RequestAborted);
-            TempData["Error"] = "Không thể nhập số lượng này vì tồn kho sẽ vượt giới hạn cho phép. Hãy kiểm tra tồn kho hiện tại.";
-            return RedirectToAction(nameof(Index), new { tab = "expenses" });
+            var productSlug = item.ProductSlug.Trim();
+            var updatedRows = await database.Products
+                .Where(product => product.Slug == productSlug && product.Stock <= 100000 - item.Quantity)
+                .ExecuteUpdateAsync(updates => updates.SetProperty(product => product.Stock, product => product.Stock + item.Quantity), HttpContext.RequestAborted);
+            if (updatedRows != 1)
+            {
+                await transaction.RollbackAsync(HttpContext.RequestAborted);
+                TempData["Error"] = $"Không thể nhập {products[productSlug].Name} vì tồn kho sẽ vượt giới hạn 100.000. Không có dòng nào trong phiếu được lưu.";
+                return RedirectToAction(nameof(Index), new { tab = "expenses" });
+            }
+
+            database.StockReceipts.Add(new StockReceipt
+            {
+                ProductSlug = productSlug,
+                ProductName = products[productSlug].Name,
+                Quantity = item.Quantity,
+                UnitCost = item.UnitCost,
+                Supplier = model.Supplier.Trim(),
+                Reference = model.Reference.Trim(),
+                ReceivedOn = model.ReceivedOn,
+                Notes = model.Notes.Trim(),
+                RecordedBy = recordedBy
+            });
         }
 
-        database.StockReceipts.Add(new StockReceipt
-        {
-            ProductSlug = product.Slug,
-            ProductName = product.Name,
-            Quantity = model.Quantity,
-            UnitCost = model.UnitCost,
-            Supplier = model.Supplier.Trim(),
-            Reference = model.Reference.Trim(),
-            ReceivedOn = model.ReceivedOn,
-            Notes = model.Notes.Trim(),
-            RecordedBy = userManager.GetUserId(User) ?? throw new InvalidOperationException("The authenticated administrator has no user identifier.")
-        });
         await database.SaveChangesAsync(HttpContext.RequestAborted);
         await transaction.CommitAsync(HttpContext.RequestAborted);
-        TempData["Notice"] = $"Đã ghi nhận nhập {model.Quantity:N0} sản phẩm {product.Name}; tồn kho đã được cộng thêm.";
+        TempData["Notice"] = $"Đã ghi nhận nhập kho {model.Items.Count} sản phẩm; tồn kho và lịch sử nhập đã được cập nhật.";
         return RedirectToAction(nameof(Index), new { tab = "expenses" });
     }
 
@@ -192,6 +215,12 @@ public sealed class AdminController(
     [RequestFormLimits(MultipartBodyLengthLimit = MaxFashionVideoRequestSize)]
     public async Task<IActionResult> UploadFashionVideo(FashionVideoUploadViewModel model)
     {
+        if (environment.IsProduction() && !objectStorage.IsConfigured && !configuration.GetValue<bool>("Storage:AllowLocalVideoStorage"))
+        {
+            TempData["Error"] = "Chưa thể tải video lên: môi trường production chưa có lưu trữ bền vững. Hãy cấu hình Storage:S3 hoặc bật Storage:AllowLocalVideoStorage chỉ khi đã gắn ổ đĩa persistent.";
+            return RedirectToAction(nameof(Index), new { tab = "videos" });
+        }
+
         if (!ModelState.IsValid || model.VideoFile is not { Length: > 0 } videoFile)
         {
             TempData["Error"] = "Chọn video, sản phẩm và nhập chú thích hợp lệ trước khi tải lên.";

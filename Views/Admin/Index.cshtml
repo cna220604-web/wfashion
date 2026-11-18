@@ -27,17 +27,38 @@
     else if (tab == "expenses")
     {
         <div class="admin-finance-forms">
-            <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">KHO · NHẬN HÀNG</span><h2>Ghi nhận nhập hàng</h2></div></div>
-                <p class="panel-help">Lưu số lượng và giá vốn theo lần nhập. Tồn kho sản phẩm sẽ tự động tăng sau khi lưu thành công.</p>
-                <form asp-action="RecordStockReceipt" method="post" class="product-admin-form finance-form">
-                    <label>Sản phẩm<select name="ProductSlug" class="portal-select" required><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products) { <option value="@product.Slug">@product.Name · tồn @product.Stock</option> }</select></label>
-                    <label>Số lượng nhập<input name="Quantity" class="portal-input" type="number" min="1" max="100000" required /></label>
-                    <label>Giá nhập / sản phẩm (₫)<input name="UnitCost" class="portal-input" type="number" min="1" max="9999999999.99" step="0.01" required /></label>
+            <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">KHO · NHẬN HÀNG</span><h2>Nhập nhiều sản phẩm</h2></div></div>
+                <p class="panel-help">Dán danh sách từ Excel/Google Sheets hoặc thêm từng dòng. Mỗi dòng gồm mã sản phẩm, số lượng, giá nhập; toàn bộ phiếu được lưu cùng lúc.</p>
+                <form asp-action="RecordStockReceipt" method="post" class="product-admin-form finance-form stock-receipt-form" data-stock-receipt-form>
+                    <label class="wide-field">Nạp nhanh từ bảng tính<textarea class="portal-input stock-bulk-input" rows="4" data-stock-bulk-input placeholder="SKU-101;12;250000&#10;SKU-102;5;180000"></textarea><small>Dán 3 cột: mã sản phẩm, số lượng, giá nhập; phân cách bằng dấu chấm phẩy hoặc tab. Giá nhập không dùng dấu tách hàng nghìn.</small></label>
+                    <button class="mini-submit" type="button" data-stock-bulk-load>NẠP DANH SÁCH</button>
+                    <p class="stock-bulk-feedback" data-stock-bulk-error aria-live="polite"></p>
+                    <div class="stock-receipt-lines" data-stock-lines>
+                        <div class="stock-receipt-line" data-stock-row>
+                            <label for="stock-product-0">Sản phẩm<select id="stock-product-0" name="Items[0].ProductSlug" class="portal-select" data-stock-product required><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products) { <option value="@product.Slug">@product.Name · tồn @product.Stock</option> }</select></label>
+                            <label for="stock-quantity-0">Số lượng<input id="stock-quantity-0" name="Items[0].Quantity" class="portal-input" type="number" min="1" max="100000" data-stock-quantity required /></label>
+                            <label for="stock-cost-0">Giá nhập / sản phẩm (₫)<input id="stock-cost-0" name="Items[0].UnitCost" class="portal-input" type="number" min="1" max="9999999999.99" step="0.01" data-stock-unit-cost required /></label>
+                            <div class="stock-line-total">Thành tiền <output data-stock-line-total>0 ₫</output></div>
+                            <button class="text-action danger-action" type="button" data-stock-remove-row aria-label="Xóa sản phẩm khỏi phiếu">Xóa dòng</button>
+                        </div>
+                    </div>
+                    <template data-stock-row-template>
+                        <div class="stock-receipt-line" data-stock-row>
+                            <label for="stock-product-__index__">Sản phẩm<select id="stock-product-__index__" name="Items[__index__].ProductSlug" class="portal-select" data-stock-product required><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products) { <option value="@product.Slug">@product.Name · tồn @product.Stock</option> }</select></label>
+                            <label for="stock-quantity-__index__">Số lượng<input id="stock-quantity-__index__" name="Items[__index__].Quantity" class="portal-input" type="number" min="1" max="100000" data-stock-quantity required /></label>
+                            <label for="stock-cost-__index__">Giá nhập / sản phẩm (₫)<input id="stock-cost-__index__" name="Items[__index__].UnitCost" class="portal-input" type="number" min="1" max="9999999999.99" step="0.01" data-stock-unit-cost required /></label>
+                            <div class="stock-line-total">Thành tiền <output data-stock-line-total>0 ₫</output></div>
+                            <button class="text-action danger-action" type="button" data-stock-remove-row aria-label="Xóa sản phẩm khỏi phiếu">Xóa dòng</button>
+                        </div>
+                    </template>
+                    <select class="stock-product-template" data-stock-product-template aria-hidden="true" tabindex="-1"><option value=""></option>@foreach (var product in Model.Products) { <option value="@product.Slug">@product.Name</option> }</select>
+                    <button class="mini-submit" type="button" data-stock-add-row>THÊM DÒNG SẢN PHẨM</button>
+                    <div class="stock-receipt-summary">Tổng giá trị phiếu: <strong data-stock-total>0 ₫</strong></div>
                     <label>Ngày nhập<input name="ReceivedOn" class="portal-input" type="date" value="@DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).ToString("yyyy-MM-dd")" required /></label>
                     <label>Nhà cung cấp<input name="Supplier" class="portal-input" maxlength="120" /></label>
                     <label>Mã phiếu / hóa đơn<input name="Reference" class="portal-input" maxlength="80" /></label>
                     <label class="wide-field">Ghi chú<input name="Notes" class="portal-input" maxlength="500" /></label>
-                    <button class="mini-submit" type="submit">LƯU NHẬP HÀNG & CỘNG TỒN KHO</button>
+                    <button class="mini-submit" type="submit">LƯU PHIẾU & CỘNG TỒN KHO</button>
                 </form>
             </section>
             <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">TÀI CHÍNH · CHI PHÍ</span><h2>Ghi nhận chi phí vận hành</h2></div></div>
@@ -106,7 +127,11 @@
     else if (tab == "videos")
     {
         <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">VIDEO FASHION · ĐĂNG VIDEO</span><h2>Thêm video outfit</h2></div><span class="panel-count">MP4 / WebM · tối đa 100 MB</span></div>
-            <p class="panel-help">Mỗi video phải gắn với một sản phẩm đang bán. Khách xem trong trang Video fashion riêng và có thể mở sản phẩm để mua. Khi đã cấu hình object storage, video được lưu bền vững ngoài máy chủ Render.</p>
+            <p class="panel-help">Mỗi video phải gắn với một sản phẩm đang bán. Khách xem trong trang Video fashion riêng và có thể mở sản phẩm để mua. Để xem được sau khi máy chủ khởi động lại, cần cấu hình object storage S3-compatible.</p>
+            @if (ViewData["VideoStorageWarning"] is true)
+            {
+                <p class="portal-alert danger" role="alert">Lưu trữ video bền vững chưa được cấu hình. Tải video lên đang bị khóa để tránh mất tệp; hãy cấu hình Storage:S3 hoặc xác nhận một ổ đĩa persistent trước khi bật lưu local.</p>
+            }
             <form asp-action="UploadFashionVideo" method="post" enctype="multipart/form-data" class="product-admin-form fashion-video-upload-form">
                 <label>Sản phẩm<select name="ProductSlug" class="portal-select" required><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products.Where(product => product.IsActive)) { <option value="@product.Slug">@product.Name · @product.Price.ToString("N0")₫</option> }</select></label>
                 <label class="wide-field">Chú thích video<input name="Caption" class="portal-input" maxlength="180" placeholder="Ví dụ: Outfit linen cho ngày nắng" required /></label>
@@ -152,3 +177,6 @@
         </section>
     }
 </section>
+@section Scripts {
+    <script src="~/js/admin-stock-receipts.js" asp-append-version="true"></script>
+}

@@ -66,16 +66,10 @@ public sealed class OperatingExpense
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 
-public sealed class StockReceiptViewModel
+public sealed class StockReceiptBatchViewModel
 {
-    [Required]
-    public string ProductSlug { get; set; } = string.Empty;
-
-    [Range(1, 100000)]
-    public int Quantity { get; set; }
-
-    [Range(typeof(decimal), "1", "9999999999.99")]
-    public decimal UnitCost { get; set; }
+    [Required, MinLength(1), MaxLength(200)]
+    public List<StockReceiptLineViewModel> Items { get; set; } = [];
 
     [StringLength(120)]
     public string Supplier { get; set; } = string.Empty;
@@ -87,6 +81,18 @@ public sealed class StockReceiptViewModel
 
     [StringLength(500)]
     public string Notes { get; set; } = string.Empty;
+}
+
+public sealed class StockReceiptLineViewModel
+{
+    [Required, StringLength(20)]
+    public string ProductSlug { get; set; } = string.Empty;
+
+    [Range(1, 100000)]
+    public int Quantity { get; set; }
+
+    [Range(typeof(decimal), "1", "9999999999.99")]
+    public decimal UnitCost { get; set; }
 }
 
 public sealed class OperatingExpenseViewModel
