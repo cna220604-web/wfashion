@@ -27,6 +27,8 @@ services:
         sync: false
       - key: Storage__S3__SecretKey
         sync: false
+      - key: Storage__S3__Region
+        sync: false
       - key: Storage__Avatars__S3__Endpoint
         sync: false
       - key: Storage__Avatars__S3__Bucket

@@ -28,7 +28,7 @@ public sealed class AdminController(
         "fashion");
 
     private const long MaxProductImageSize = 150L * 1024 * 1024;
-    private const long MaxFashionVideoSize = 100L * 1024 * 1024;
+    private const long MaxFashionVideoSize = 50L * 1024 * 1024;
     private const long MaxFashionVideoRequestSize = MaxFashionVideoSize + 1024 * 1024;
     private const long MaxProductImageRequestSize = MaxProductImageSize + 1024 * 1024;
     private static readonly string[] ExpenseCategories =
@@ -481,7 +481,7 @@ public sealed class AdminController(
 
         if (videoFile.Length > MaxFashionVideoSize)
         {
-            TempData["Error"] = "Video không được vượt quá 100 MB.";
+            TempData["Error"] = "Video không được vượt quá 50 MB.";
             return RedirectToAction(nameof(Index), new { tab = "videos" });
         }
 
