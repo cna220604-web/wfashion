@@ -54,6 +54,10 @@
         </table></div>
         <dl class="order-detail-totals">
             <div><dt>Tạm tính</dt><dd>@Model.Subtotal.ToString("N0")₫</dd></div>
+            @if (Model.DiscountAmount > 0)
+            {
+                <div><dt>Voucher @Model.PromotionCode</dt><dd>−@Model.DiscountAmount.ToString("N0")₫</dd></div>
+            }
             <div><dt>Phí giao hàng</dt><dd>@(Model.ShippingFee == 0 ? "Miễn phí" : $"{Model.ShippingFee:N0}₫")</dd></div>
             <div class="order-detail-total"><dt>Tổng thanh toán</dt><dd>@Model.Total.ToString("N0")₫</dd></div>
         </dl>

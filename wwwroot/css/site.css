@@ -1551,7 +1551,7 @@ body {
 }
 
 .cart-items {
-  max-height: calc(100vh - 360px);
+  max-height: max(80px, calc(100dvh - 440px));
   overflow-y: auto;
 }
 
@@ -1643,6 +1643,69 @@ body {
   background: #f0ece4;
   font-size: 10px;
   text-align: center;
+}
+
+.promotion-entry {
+  margin: 0 0 8px;
+}
+
+.promotion-entry > label {
+  display: block;
+  margin-bottom: 5px;
+  color: #655b50;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.promotion-entry > div {
+  display: flex;
+  gap: 7px;
+}
+
+.promotion-entry input {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #ded5c9;
+  border-radius: 3px;
+  color: #332b25;
+  background: #fff;
+  font-size: 12px;
+}
+
+.promotion-entry button {
+  flex: 0 0 auto;
+  padding: 0 12px;
+  border: 1px solid #773c3d;
+  border-radius: 3px;
+  color: #fffaf3;
+  background: #773c3d;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  cursor: pointer;
+}
+
+.promotion-entry button:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.promotion-entry p {
+  margin: 6px 0 0;
+  color: #62594f;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.promotion-discount-line,
+.promotion-discount-line strong {
+  color: #47734c;
+}
+
+.promotion-discount-line b {
+  font-weight: 600;
 }
 
 .summary-line {
@@ -2901,6 +2964,22 @@ body {
   min-height: 40px;
 }
 
+.promotion-admin-form {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.promotion-admin-form > label small {
+  color: #766d64;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.promotion-admin-form .portal-input,
+.promotion-admin-form .portal-select {
+  min-width: 0;
+}
+
 .product-image-upload {
   min-height: 40px;
   padding: 7px;
@@ -3371,6 +3450,10 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .promotion-admin-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .customer-dashboard-grid {
     grid-template-columns: 1fr;
   }
@@ -3433,6 +3516,10 @@ body {
   }
 
   .product-admin-form {
+    grid-template-columns: 1fr;
+  }
+
+  .promotion-admin-form {
     grid-template-columns: 1fr;
   }
 

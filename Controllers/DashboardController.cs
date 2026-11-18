@@ -57,6 +57,14 @@ public sealed class DashboardController(
             .Where(order => order.UserId == user.Id)
             .OrderByDescending(order => order.CreatedAtUtc)
             .ToListAsync();
+        var savedProducts = await database.WishlistItems.AsNoTracking()
+            .Where(item => item.UserId == user.Id)
+            .Join(database.Products.AsNoTracking().Where(product => product.IsActive),
+                item => item.ProductSlug,
+                product => product.Slug,
+                (_, product) => product)
+            .OrderBy(product => product.Name)
+            .ToListAsync();
         var orderIds = orders.Select(order => order.Id).ToArray();
         var productReviews = await database.ProductReviews.AsNoTracking()
             .Where(review => orderIds.Contains(review.CustomerOrderId))
@@ -73,6 +81,7 @@ public sealed class DashboardController(
                 AvatarImageId = user.AvatarImageId
             },
             Orders = orders,
+            SavedProducts = savedProducts,
             ProductReviews = productReviews
         };
         return View(model);
@@ -253,6 +262,14 @@ public sealed class DashboardController(
             Orders = await database.Orders.AsNoTracking().Include(order => order.Items)
                 .Where(order => order.UserId == user.Id)
                 .OrderByDescending(order => order.CreatedAtUtc)
+                .ToListAsync(),
+            SavedProducts = await database.WishlistItems.AsNoTracking()
+                .Where(item => item.UserId == user.Id)
+                .Join(database.Products.AsNoTracking().Where(product => product.IsActive),
+                    item => item.ProductSlug,
+                    product => product.Slug,
+                    (_, product) => product)
+                .OrderBy(product => product.Name)
                 .ToListAsync()
         });
     }

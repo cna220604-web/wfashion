@@ -38,6 +38,7 @@ builder.Services.AddSingleton<ObjectMediaStorage>();
 builder.Services.AddSingleton<FashionMagazineService>();
 builder.Services.AddHostedService(services => services.GetRequiredService<FashionMagazineService>());
 builder.Services.AddScoped<OrderNotificationService>();
+builder.Services.AddScoped<PromotionService>();
 Action<DbContextOptionsBuilder> configureDatabase;
 if (databaseProvider == "sqlite")
 {
@@ -272,7 +273,17 @@ staticFileTypes.Mappings[".heic"] = "image/heic";
 staticFileTypes.Mappings[".tiff"] = "image/tiff";
 staticFileTypes.Mappings[".mp4"] = "video/mp4";
 staticFileTypes.Mappings[".webm"] = "video/webm";
-app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = staticFileTypes });
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = staticFileTypes,
+    OnPrepareResponse = context =>
+    {
+        if (context.Context.Request.Path.StartsWithSegments("/images/uploads"))
+        {
+            context.Context.Response.Headers.CacheControl = "public,max-age=31536000,immutable";
+        }
+    }
+});
 if (!string.IsNullOrWhiteSpace(persistentStoragePath))
 {
     var uploadsPath = Path.GetFullPath(Path.Combine(persistentStoragePath, "images", "uploads"));
@@ -282,7 +293,8 @@ if (!string.IsNullOrWhiteSpace(persistentStoragePath))
     {
         FileProvider = new PhysicalFileProvider(uploadsPath),
         RequestPath = "/images/uploads",
-        ContentTypeProvider = staticFileTypes
+        ContentTypeProvider = staticFileTypes,
+        OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "public,max-age=31536000,immutable"
     });
     app.UseStaticFiles(new StaticFileOptions
     {

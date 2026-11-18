@@ -49,6 +49,12 @@ namespace WebApplication1.Controllers
                     summary => summary.ProductSlug,
                     summary => new ProductReviewSummary(summary.AverageRating, summary.ReviewCount));
             var customer = User.IsInRole(AppRoles.Customer) ? await userManager.GetUserAsync(User) : null;
+            var favoriteProductSlugs = customer is null
+                ? Array.Empty<string>()
+                : await database.WishlistItems.AsNoTracking()
+                    .Where(item => item.UserId == customer.Id)
+                    .Select(item => item.ProductSlug)
+                    .ToArrayAsync();
             ViewData["StorePage"] = page;
             ViewData["Title"] = page switch
             {
@@ -60,6 +66,7 @@ namespace WebApplication1.Controllers
             {
                 Products = products,
                 Reviews = reviewSummaries,
+                FavoriteProductSlugs = favoriteProductSlugs,
                 CustomerName = customer?.DisplayName ?? string.Empty,
                 CustomerPhone = customer?.PhoneNumber ?? string.Empty,
                 CustomerAddress = customer?.Address ?? string.Empty

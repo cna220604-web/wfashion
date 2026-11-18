@@ -4,6 +4,7 @@ public sealed class StorefrontViewModel
 {
     public IReadOnlyList<Product> Products { get; init; } = [];
     public IReadOnlyDictionary<string, ProductReviewSummary> Reviews { get; init; } = new Dictionary<string, ProductReviewSummary>();
+    public IReadOnlyList<string> FavoriteProductSlugs { get; init; } = [];
     public string CustomerName { get; init; } = string.Empty;
     public string CustomerPhone { get; init; } = string.Empty;
     public string CustomerAddress { get; init; } = string.Empty;
@@ -29,11 +30,23 @@ public sealed class AdminDashboardViewModel
     public IReadOnlyList<OperatingExpense> RecentOperatingExpenses { get; init; } = [];
     public IReadOnlyList<Product> Products { get; init; } = [];
     public IReadOnlyList<FashionVideo> FashionVideos { get; init; } = [];
-    public IReadOnlyList<AdminUserRow> Users { get; init; } = [];
+    public IReadOnlyList<AdminUserRow> AdminUsers { get; init; } = [];
+    public IReadOnlyList<AdminUserRow> EmployeeUsers { get; init; } = [];
+    public IReadOnlyList<AdminUserRow> CustomerUsers { get; init; } = [];
     public IReadOnlyList<CustomerOrder> RecentOrders { get; init; } = [];
+    public IReadOnlyList<Product> LowStockProducts { get; init; } = [];
+    public IReadOnlyList<Promotion> Promotions { get; init; } = [];
 }
 
-public sealed record AdminUserRow(string Id, string Email, string DisplayName, string Role);
+public sealed record AdminUserRow(
+    string Id,
+    string Email,
+    string DisplayName,
+    string Role,
+    string? PhoneNumber,
+    string? Address,
+    string? Gender,
+    string? AvatarImageId);
 
 public sealed class StaffDashboardViewModel
 {
@@ -41,6 +54,7 @@ public sealed class StaffDashboardViewModel
     public int ProcessingOrderCount { get; init; }
     public int ShippedOrderCount { get; init; }
     public int LowStockCount { get; init; }
+    public IReadOnlyList<Product> LowStockProducts { get; init; } = [];
     public int ProductReviewCount { get; init; }
     public string? StatusFilter { get; init; }
     public string OrderSearch { get; init; } = string.Empty;
@@ -66,6 +80,7 @@ public sealed class CustomerDashboardViewModel
 {
     public ProfileViewModel Profile { get; init; } = new();
     public IReadOnlyList<CustomerOrder> Orders { get; init; } = [];
+    public IReadOnlyList<Product> SavedProducts { get; init; } = [];
     public IReadOnlyDictionary<string, ProductReview> ProductReviews { get; init; } = new Dictionary<string, ProductReview>();
 
     public static string ReviewKey(int orderId, string productSlug) => $"{orderId}:{productSlug}";

@@ -31,9 +31,25 @@
         <article class="metric-card"><span>CHỜ XÁC NHẬN</span><strong>@Model.PendingOrderCount</strong></article>
         <article class="metric-card"><span>ĐANG XỬ LÝ</span><strong>@Model.ProcessingOrderCount</strong></article>
         <article class="metric-card"><span>ĐANG GIAO</span><strong>@Model.ShippedOrderCount</strong></article>
-        <article class="metric-card"><span>SẮP HẾT HÀNG · TỒN ≤ 5</span><strong>@Model.LowStockCount</strong></article>
+        <article class="metric-card"><span>SẮP HẾT HÀNG · TỒN ≤ @Product.LowStockThreshold</span><strong>@Model.LowStockCount</strong></article>
         <article class="metric-card"><span>ĐÁNH GIÁ TỪ KHÁCH HÀNG</span><strong>@Model.ProductReviewCount</strong></article>
     </div>
+    <section class="portal-panel low-stock-panel">
+        <div class="panel-heading"><div><span class="portal-kicker">CẢNH BÁO KHO</span><h2>Sản phẩm sắp hết</h2></div><a class="portal-outline-link" href="?tab=stock">Cập nhật tồn kho ↗</a></div>
+        @if (Model.LowStockProducts.Count == 0)
+        {
+            <p class="empty-orders">Chưa có sản phẩm nào dưới ngưỡng cảnh báo.</p>
+        }
+        else
+        {
+            <ul class="low-stock-list">
+                @foreach (var product in Model.LowStockProducts)
+                {
+                    <li><span><strong>@product.Name</strong><small>@product.Slug</small></span><b>@product.Stock còn</b></li>
+                }
+            </ul>
+        }
+    </section>
     }
     @if (tab == "feedback")
     {
@@ -98,7 +114,7 @@
             <div class="table-scroll"><table class="management-table"><thead><tr><th>Đơn hàng</th><th>Khách hàng</th><th>Sản phẩm</th><th>Tổng tiền</th><th>Trạng thái</th><th>Cập nhật</th></tr></thead><tbody>
             @foreach (var order in Model.Orders)
             {
-                <tr><td>#@order.Id.ToString("D6")<small>@order.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>@if (order.ReturnRequestedAtUtc is not null) { <small class="return-request-badge">Có yêu cầu hoàn trả</small> }<a asp-action="OrderDetails" asp-route-id="@order.Id" class="text-action">Xem chi tiết</a></td><td>@order.CustomerName<small>@order.Phone</small><small>@order.Address</small>@if (!string.IsNullOrWhiteSpace(order.Note)) { <small>Ghi chú: @order.Note</small> }</td><td>@foreach (var item in order.Items) { <span>@item.ProductName · @item.Size × @item.Quantity<br /></span> }</td><td>@order.Total.ToString("N0")₫<small>COD</small></td><td><span class="status-pill status-@order.Status.ToLowerInvariant()">@order.Status</span></td><td>
+                <tr><td>#@order.Id.ToString("D6")<small>@order.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>@if (order.ReturnRequestedAtUtc is not null) { <small class="return-request-badge">Có yêu cầu hoàn trả</small> }<a asp-action="OrderDetails" asp-route-id="@order.Id" class="text-action">Xem chi tiết</a></td><td>@order.CustomerName<small>@order.Phone</small><small>@order.Address</small>@if (!string.IsNullOrWhiteSpace(order.Note)) { <small>Ghi chú: @order.Note</small> }</td><td>@foreach (var item in order.Items) { <span>@item.ProductName · @item.Size × @item.Quantity<br /></span> }</td><td>@order.Total.ToString("N0")₫<small>COD</small>@if (order.DiscountAmount > 0) { <small>Voucher @order.PromotionCode · −@order.DiscountAmount.ToString("N0")₫</small> }</td><td><span class="status-pill status-@order.Status.ToLowerInvariant()">@order.Status</span></td><td>
                     @if (order.Status == OrderStatuses.Pending || order.Status == OrderStatuses.Processing || order.Status == OrderStatuses.Shipped)
                     {
                         <form asp-action="UpdateOrderStatus" method="post" class="inline-action-form" data-confirm-cancel><input type="hidden" name="tab" value="orders" /><input type="hidden" name="statusFilter" value="@Model.StatusFilter" /><input type="hidden" name="search" value="@Model.OrderSearch" /><input type="hidden" name="id" value="@order.Id" /><select name="status" class="portal-select" aria-label="Trạng thái đơn #@order.Id">

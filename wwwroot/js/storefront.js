@@ -32,9 +32,13 @@ const saveStore = (key, value) => {
 const savedCart = readStore('studio.cart', []);
 const savedFavorites = readStore('studio.favorites', []);
 let cart = (Array.isArray(savedCart) ? savedCart : []).filter(item => item && products.some(product => product.id === item.id) && typeof item.size === 'string' && Number.isInteger(item.quantity) && item.quantity > 0 && item.quantity <= 10);
-let favorites = new Set((Array.isArray(savedFavorites) ? savedFavorites : []).filter(id => products.some(product => product.id === id)));
+const initialFavorites = isCustomer && Array.isArray(storefrontConfig.favoriteProductSlugs)
+    ? storefrontConfig.favoriteProductSlugs
+    : savedFavorites;
+let favorites = new Set((Array.isArray(initialFavorites) ? initialFavorites : []).filter(id => products.some(product => product.id === id)));
 let selectedCategory = 'all';
 let favoritesOnly = false;
+let appliedPromotion = null;
 let currentProductPage = 1;
 const productsPerPage = 25;
 let selectedProduct = null;
@@ -60,11 +64,14 @@ let toastTimer;
 
 const saveCart = () => saveStore('studio.cart', cart);
 const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
-const imageUrl = (productId, imageId) => imageId.startsWith('uploads/')
+const imageUrl = (productId, imageId, width = 640, quality = 72) => imageId.startsWith('uploads/')
     ? `/images/${imageId.split('/').map(encodeURIComponent).join('/')}`
     : /^look-(?:0[1-9]|[12]\d|30)$/.test(productId)
         ? `/images/products/${productId}.jpg`
-        : `https://images.unsplash.com/${encodeURIComponent(imageId)}?auto=format&fit=crop&w=800&q=82`;
+        : `https://images.unsplash.com/${encodeURIComponent(imageId)}?auto=format&fit=crop&w=${width}&q=${quality}`;
+const imageSrcSet = (productId, imageId) => imageId.startsWith('uploads/') || /^look-(?:0[1-9]|[12]\d|30)$/.test(productId)
+    ? ''
+    : [320, 640, 960].map(width => `${imageUrl(productId, imageId, width, 72)} ${width}w`).join(', ');
 const showToast = message => {
     const toast = document.getElementById('store-toast');
     toast.textContent = message;
@@ -92,6 +99,21 @@ const redirectToLoginFromStore = () => {
 };
 const saveChatHistory = () => saveStore('studio.ai-chat', chatHistory);
 const normalizeCatalogText = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLocaleLowerCase('vi');
+const getProductSearchText = product => normalizeCatalogText([
+    product.name,
+    product.id,
+    product.categoryLabel,
+    product.category,
+    product.color,
+    product.description,
+    ...(product.sizes || []),
+    product.sizesCsv
+].filter(Boolean).join(' '));
+const getSearchTerms = value => normalizeCatalogText(value).split(/[^a-z0-9]+/).filter(Boolean);
+const getProductSearchScore = (product, terms) => {
+    const searchableText = getProductSearchText(product);
+    return terms.filter(term => searchableText.includes(term)).length;
+};
 const initializeCatalogFilters = () => {
     const colorFilter = document.getElementById('color-filter');
     const sizeFilter = document.getElementById('size-filter');
@@ -110,14 +132,14 @@ const initializeCatalogFilters = () => {
 };
 const resetProductPage = () => { currentProductPage = 1; };
 const renderProducts = () => {
-    const query = normalizeCatalogText(document.getElementById('search-input').value.trim());
+    const terms = getSearchTerms(document.getElementById('search-input').value.trim());
     const color = document.getElementById('color-filter').value;
     const size = document.getElementById('size-filter').value;
     const priceRange = document.getElementById('price-filter').value;
     const [minimumPrice, maximumPrice] = priceRange ? priceRange.split('-').map(value => value ? Number(value) : null) : [null, null];
     const sort = document.getElementById('sort-select').value;
     let visible = products.filter(product => {
-        const matchesText = normalizeCatalogText(`${product.name} ${product.id} ${product.categoryLabel} ${product.color}`).includes(query);
+        const matchesText = terms.length === 0 || getProductSearchScore(product, terms) > 0;
         const matchesPrice = (minimumPrice === null || product.price >= minimumPrice) && (maximumPrice === null || product.price < maximumPrice);
         return (selectedCategory === 'all' || product.category === selectedCategory)
             && (!favoritesOnly || favorites.has(product.id))
@@ -134,7 +156,7 @@ const renderProducts = () => {
     document.getElementById('product-grid').innerHTML = pageProducts.map(product => `
         <article class="product-card" draggable="true" data-look-drag="${escapeHtml(product.id)}">
             <button class="product-image-button" type="button" data-product="${escapeHtml(product.id)}" aria-label="Xem ${escapeHtml(product.name)}">
-                <img src="${imageUrl(product.id, product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" />
+                <img src="${imageUrl(product.id, product.image)}" srcset="${imageSrcSet(product.id, product.image)}" sizes="(max-width: 680px) 50vw, (max-width: 1100px) 33vw, 25vw" alt="${escapeHtml(product.name)}" loading="lazy" decoding="async" />
                 <span class="product-badge">${escapeHtml(product.categoryLabel)}</span>
             </button>
             <button class="product-heart ${favorites.has(product.id) ? 'is-favorite' : ''}" type="button" data-favorite="${escapeHtml(product.id)}" aria-label="${favorites.has(product.id) ? 'Bỏ khỏi' : 'Thêm vào'} yêu thích" aria-pressed="${favorites.has(product.id)}">${favorites.has(product.id) ? '♥' : '♡'}</button>
@@ -158,14 +180,24 @@ const renderCart = () => {
     const itemsHost = document.getElementById('cart-items');
     itemsHost.innerHTML = cart.map((item, index) => {
         const product = products.find(candidate => candidate.id === item.id);
-        return `<article class="cart-item"><img src="${imageUrl(product.id, product.image)}" alt="" /><div class="cart-item-info"><strong>${escapeHtml(product.name)}</strong><span>Size: ${escapeHtml(item.size)}</span><b>${money.format(product.price)}</b><div class="quantity-control"><button type="button" data-quantity="${index}" data-delta="-1" aria-label="Giảm số lượng">−</button><span>${item.quantity}</span><button type="button" data-quantity="${index}" data-delta="1" aria-label="Tăng số lượng">＋</button><button type="button" class="remove-item" data-remove="${index}">Xóa</button></div></div></article>`;
+        return `<article class="cart-item"><img src="${imageUrl(product.id, product.image, 240, 68)}" srcset="${imageSrcSet(product.id, product.image)}" sizes="80px" alt="" loading="lazy" decoding="async" /><div class="cart-item-info"><strong>${escapeHtml(product.name)}</strong><span>Size: ${escapeHtml(item.size)}</span><b>${money.format(product.price)}</b><div class="quantity-control"><button type="button" data-quantity="${index}" data-delta="-1" aria-label="Giảm số lượng">−</button><span>${item.quantity}</span><button type="button" data-quantity="${index}" data-delta="1" aria-label="Tăng số lượng">＋</button><button type="button" class="remove-item" data-remove="${index}">Xóa</button></div></div></article>`;
     }).join('');
     const subtotal = cart.reduce((total, item) => total + products.find(product => product.id === item.id).price * item.quantity, 0);
+    const promotionFeedback = document.getElementById('promotion-feedback');
+    if (appliedPromotion && appliedPromotion.subtotal !== subtotal) {
+        appliedPromotion = null;
+        promotionFeedback.textContent = 'Giỏ hàng đã thay đổi. Hãy áp dụng lại mã giảm giá.';
+        promotionFeedback.hidden = false;
+    }
+    const discount = appliedPromotion?.discount ?? 0;
     const shipping = subtotal === 0 || subtotal >= 800000 ? 0 : 30000;
     document.getElementById('subtotal-value').textContent = money.format(subtotal);
+    document.getElementById('promotion-discount-line').hidden = discount <= 0;
+    document.getElementById('promotion-code-label').textContent = appliedPromotion?.code ?? '';
+    document.getElementById('promotion-discount-value').textContent = `−${money.format(discount)}`;
     document.getElementById('shipping-value').textContent = shipping ? money.format(shipping) : 'Miễn phí';
-    document.getElementById('total-value').textContent = money.format(subtotal + shipping);
-    document.getElementById('checkout-total').textContent = money.format(subtotal + shipping);
+    document.getElementById('total-value').textContent = money.format(subtotal - discount + shipping);
+    document.getElementById('checkout-total').textContent = money.format(subtotal - discount + shipping);
 };
 const colorPalettes = {
     black: { label: 'Đen', hex: '#282625', matches: ['white', 'beige', 'wine', 'pink'], tip: 'Đen là gam nền linh hoạt. Trắng tạo tương phản gọn gàng; be làm tổng thể mềm hơn; đỏ rượu hoặc hồng tạo điểm nhấn.' },
@@ -295,7 +327,7 @@ const renderSeason = season => {
         seasonProducts.innerHTML = recommendations.map(({ product }, index) => `
             <article class="season-product-card${animateIn ? ' season-copy-entering' : ''}" style="--season-card-delay:${animateIn ? index * 70 : 0}ms">
                 <button type="button" class="season-product-open" data-season-product="${escapeHtml(product.id)}" aria-label="Xem ${escapeHtml(product.name)}">
-                    <img src="${imageUrl(product.id, product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" />
+                    <img src="${imageUrl(product.id, product.image)}" srcset="${imageSrcSet(product.id, product.image)}" sizes="(max-width: 680px) 45vw, 220px" alt="${escapeHtml(product.name)}" loading="lazy" decoding="async" />
                     <span class="season-product-copy"><strong>${escapeHtml(product.name)}</strong><small>${money.format(product.price)}</small></span>
                     <span class="season-product-arrow" aria-hidden="true">↗</span>
                 </button>
@@ -385,7 +417,7 @@ const recommendedAccessoryColors = bottomColor => {
 };
 const renderProductLink = product => `
     <button class="matching-product" type="button" data-product="${escapeHtml(product.id)}">
-        <img src="${imageUrl(product.id, product.image)}" alt="" loading="lazy" />
+        <img src="${imageUrl(product.id, product.image, 320, 70)}" srcset="${imageSrcSet(product.id, product.image)}" sizes="100px" alt="" loading="lazy" decoding="async" />
         <span><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.color)} · ${money.format(product.price)}</small></span><span class="matching-product-arrow" aria-hidden="true">↗</span>
     </button>`;
 const apparelSizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
@@ -710,7 +742,7 @@ const openProduct = (id, navigation = 'new') => {
     selectedSize = selectedProduct.sizes[0];
     const productDialog = document.getElementById('product-dialog');
     document.getElementById('product-detail').innerHTML = `
-        <img class="detail-image" src="${imageUrl(selectedProduct.id, selectedProduct.image)}" alt="${escapeHtml(selectedProduct.name)}" />
+        <img class="detail-image" src="${imageUrl(selectedProduct.id, selectedProduct.image, 960, 76)}" srcset="${imageSrcSet(selectedProduct.id, selectedProduct.image)}" sizes="(max-width: 680px) 100vw, 50vw" alt="${escapeHtml(selectedProduct.name)}" loading="eager" decoding="async" fetchpriority="high" />
         <div class="detail-info-panel"><div class="detail-copy"><span class="section-kicker">${escapeHtml(selectedProduct.categoryLabel)}</span><h2 id="product-name">${escapeHtml(selectedProduct.name)}</h2><p class="detail-price">${money.format(selectedProduct.price)}</p><div class="product-rating detail-rating">${selectedProduct.review.reviewCount ? `★ ${selectedProduct.review.averageRating.toFixed(1)} <span>· ${selectedProduct.review.reviewCount} đánh giá</span>` : '<span>Chưa có đánh giá</span>'}</div><p class="detail-description">${escapeHtml(selectedProduct.description)}</p><p class="detail-color">Màu sắc: <strong>${escapeHtml(selectedProduct.color)}</strong></p><p class="detail-color">Còn lại: <strong>${selectedProduct.stock}</strong></p><span class="size-label">CHỌN KÍCH CỠ</span><div class="size-options">${selectedProduct.sizes.map((size, index) => `<button type="button" data-size="${escapeHtml(size)}" class="size-option ${index === 0 ? 'is-selected' : ''}" aria-pressed="${index === 0}">${escapeHtml(size)}</button>`).join('')}</div><div class="detail-purchase-actions"><button id="detail-add" class="solid-button" type="button" ${selectedProduct.stock < 1 ? 'disabled' : ''}>${selectedProduct.stock < 1 ? 'TẠM HẾT HÀNG' : 'THÊM VÀO TÚI'} <span aria-hidden="true">＋</span></button><button id="detail-buy-now" class="solid-button detail-buy-now" type="button" ${selectedProduct.stock < 1 ? 'disabled' : ''}>MUA NGAY <span aria-hidden="true">→</span></button></div><p id="detail-cart-status" class="detail-cart-status" role="status" aria-live="polite" hidden></p></div>${renderProductOutfitSuggestions(selectedProduct)}</div>`;
     const backButton = document.querySelector('[data-product-back]');
     backButton.hidden = productHistory.length === 0;
@@ -777,32 +809,119 @@ document.querySelectorAll('[data-nav-category]').forEach(link => link.addEventLi
     if (activeTab) activeTab.click();
 }));
 const searchInput = document.getElementById('search-input');
-let catalogSearchScrollTimer;
+const searchSuggestions = document.getElementById('search-suggestions');
+const storeSearch = searchInput.closest('.store-search');
 const scrollToCatalogResults = () => {
     const target = document.querySelector('#product-grid .product-card') || document.getElementById('empty-products');
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
+const hideSearchSuggestions = () => {
+    searchSuggestions.hidden = true;
+    searchInput.setAttribute('aria-expanded', 'false');
+};
+const renderSearchSuggestions = () => {
+    const terms = getSearchTerms(searchInput.value);
+    if (terms.length === 0) {
+        hideSearchSuggestions();
+        return [];
+    }
+
+    const matches = products
+        .map(product => ({ product, score: getProductSearchScore(product, terms) }))
+        .filter(match => match.score > 0)
+        .sort((left, right) => right.score - left.score || left.product.name.localeCompare(right.product.name, 'vi'))
+        .slice(0, 6);
+    searchSuggestions.innerHTML = matches.length > 0
+        ? matches.map(({ product }) => `<button type="button" class="search-suggestion" role="option" data-search-suggestion="${escapeHtml(product.id)}"><img src="${imageUrl(product.id, product.image, 160, 68)}" srcset="${imageSrcSet(product.id, product.image)}" sizes="44px" alt="" loading="lazy" decoding="async" /><span><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.categoryLabel)} · ${escapeHtml(product.color || 'Màu đa dạng')}</small></span><b>${money.format(product.price)}</b></button>`).join('')
+        : '<p class="search-suggestions-empty">Chưa có gợi ý phù hợp. Thử tên món, màu sắc hoặc danh mục.</p>';
+    searchSuggestions.hidden = false;
+    searchInput.setAttribute('aria-expanded', 'true');
+    return [...searchSuggestions.querySelectorAll('[data-search-suggestion]')];
+};
 searchInput.addEventListener('input', () => {
     resetProductPage();
     renderProducts();
-    clearTimeout(catalogSearchScrollTimer);
-    if (!searchInput.value.trim()) return;
-    catalogSearchScrollTimer = setTimeout(scrollToCatalogResults, 500);
+    renderSearchSuggestions();
 });
 searchInput.addEventListener('keydown', event => {
-    if (event.key !== 'Enter' || !searchInput.value.trim()) return;
-    clearTimeout(catalogSearchScrollTimer);
-    scrollToCatalogResults();
+    const suggestionButtons = [...searchSuggestions.querySelectorAll('[data-search-suggestion]')];
+    if (event.key === 'ArrowDown' && suggestionButtons.length > 0) {
+        event.preventDefault();
+        suggestionButtons[0].focus();
+        return;
+    }
+    if (event.key === 'Enter' && searchInput.value.trim()) {
+        event.preventDefault();
+        if (suggestionButtons.length > 0) suggestionButtons[0].click();
+        else {
+            hideSearchSuggestions();
+            scrollToCatalogResults();
+        }
+        return;
+    }
+    if (event.key === 'Escape') hideSearchSuggestions();
+});
+searchSuggestions.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+        hideSearchSuggestions();
+        searchInput.focus();
+        return;
+    }
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    const buttons = [...searchSuggestions.querySelectorAll('[data-search-suggestion]')];
+    const currentIndex = buttons.indexOf(document.activeElement);
+    const nextIndex = event.key === 'ArrowDown' ? Math.min(currentIndex + 1, buttons.length - 1) : currentIndex - 1;
+    event.preventDefault();
+    if (nextIndex < 0) searchInput.focus();
+    else buttons[nextIndex]?.focus();
+});
+storeSearch.addEventListener('focusout', event => {
+    if (!storeSearch.contains(event.relatedTarget)) hideSearchSuggestions();
+});
+searchSuggestions.addEventListener('click', event => {
+    const suggestion = event.target.closest('[data-search-suggestion]');
+    if (!suggestion) return;
+    hideSearchSuggestions();
+    openProduct(suggestion.dataset.searchSuggestion);
+});
+document.addEventListener('click', event => {
+    if (!storeSearch.contains(event.target)) hideSearchSuggestions();
 });
 ['color-filter', 'size-filter', 'price-filter'].forEach(id => document.getElementById(id).addEventListener('change', () => { resetProductPage(); renderProducts(); }));
 document.getElementById('sort-select').addEventListener('change', () => { resetProductPage(); renderProducts(); });
-document.getElementById('product-grid').addEventListener('click', event => {
+document.getElementById('product-grid').addEventListener('click', async event => {
     const favoriteButton = event.target.closest('[data-favorite]');
     if (favoriteButton) {
         const id = favoriteButton.dataset.favorite;
-        if (favorites.has(id)) favorites.delete(id); else favorites.add(id);
-        saveStore('studio.favorites', [...favorites]);
+        if (!id) return;
+        const isFavorite = !favorites.has(id);
+        if (isCustomer) {
+            const token = document.querySelector('#store-antiforgery input[name="__RequestVerificationToken"]')?.value;
+            if (!token) {
+                showToast('Không thể xác thực thao tác. Hãy tải lại trang rồi thử lại.');
+                return;
+            }
+            try {
+                const response = await fetch('/Wishlist/Set', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json', RequestVerificationToken: token },
+                    body: JSON.stringify({ productSlug: id, isFavorite })
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    showToast(result.error || 'Không thể cập nhật danh sách yêu thích.');
+                    return;
+                }
+            } catch {
+                showToast('Không thể kết nối để lưu sản phẩm yêu thích. Hãy thử lại.');
+                return;
+            }
+        }
+        if (isFavorite) favorites.add(id); else favorites.delete(id);
+        if (!isCustomer) saveStore('studio.favorites', [...favorites]);
         renderProducts();
+        showToast(isFavorite ? 'Đã lưu vào sản phẩm yêu thích.' : 'Đã bỏ khỏi sản phẩm yêu thích.');
         return;
     }
     const productButton = event.target.closest('[data-product]');
@@ -866,6 +985,50 @@ document.getElementById('product-detail').addEventListener('click', event => {
     }
 });
 document.getElementById('open-cart').addEventListener('click', () => document.getElementById('cart-dialog').showModal());
+document.getElementById('apply-promotion').addEventListener('click', async event => {
+    if (!isCustomer) {
+        redirectToLoginFromStore();
+        return;
+    }
+
+    const codeInput = document.getElementById('promotion-code');
+    const feedback = document.getElementById('promotion-feedback');
+    const code = codeInput.value.trim();
+    if (!code || !cart.length) {
+        feedback.textContent = 'Nhập mã voucher và thêm sản phẩm vào giỏ hàng trước.';
+        feedback.hidden = false;
+        return;
+    }
+
+    const button = event.currentTarget;
+    button.disabled = true;
+    feedback.hidden = true;
+    try {
+        const token = document.querySelector('#antiforgery-form input[name="__RequestVerificationToken"]')?.value;
+        if (!token) throw new Error('Không thể xác thực thao tác. Hãy tải lại trang rồi thử lại.');
+        const response = await fetch('/Promotions/Preview', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', RequestVerificationToken: token },
+            body: JSON.stringify({
+                code,
+                items: cart.map(item => ({ productSlug: item.id, size: item.size, quantity: item.quantity }))
+            })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'Không thể áp dụng mã giảm giá.');
+        appliedPromotion = { code: result.code, discount: result.discount, subtotal: result.subtotal };
+        codeInput.value = result.code;
+        feedback.textContent = `Đã áp dụng ${result.code}, giảm ${money.format(result.discount)}.`;
+        feedback.hidden = false;
+        renderCart();
+    } catch (error) {
+        feedback.textContent = error instanceof Error ? error.message : 'Không thể áp dụng mã giảm giá. Hãy thử lại.';
+        feedback.hidden = false;
+    } finally {
+        button.disabled = false;
+    }
+});
 document.getElementById('cart-items').addEventListener('click', event => {
     const removeButton = event.target.closest('[data-remove]');
     const quantityButton = event.target.closest('[data-quantity]');
@@ -944,6 +1107,7 @@ document.getElementById('checkout-form').addEventListener('submit', async event 
                 phone: formValues.get('Phone'),
                 address: formValues.get('Address'),
                 note: formValues.get('Note'),
+                promotionCode: appliedPromotion?.code || null,
                 items: cart.map(item => ({ productSlug: item.id, size: item.size, quantity: item.quantity }))
             })
         });
@@ -969,6 +1133,7 @@ document.getElementById('checkout-form').addEventListener('submit', async event 
         document.getElementById('checkout-form-wrap').hidden = true;
         document.getElementById('checkout-success').hidden = false;
         cart = [];
+        appliedPromotion = null;
         saveCart();
         renderCart();
         form.reset();
@@ -1062,9 +1227,12 @@ const renderRecommendationCards = (productCodes, bubble) => {
         const card = document.createElement('article');
         card.className = 'chat-product-card';
         const image = document.createElement('img');
-        image.src = imageUrl(product.id, product.image);
+        image.src = imageUrl(product.id, product.image, 320, 70);
+        image.srcset = imageSrcSet(product.id, product.image);
+        image.sizes = '100px';
         image.alt = product.name;
         image.loading = 'lazy';
+        image.decoding = 'async';
         const details = document.createElement('div');
         details.className = 'chat-product-details';
         const name = document.createElement('strong');

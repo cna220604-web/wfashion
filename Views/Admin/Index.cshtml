@@ -2,14 +2,15 @@
 @{
     ViewData["Title"] = "Quản trị hệ thống";
     var requestedTab = Context.Request.Query["tab"].ToString();
-    var tab = requestedTab is "products" or "videos" or "expenses" or "partners" or "users" or "orders" ? requestedTab : "overview";
+    var tab = requestedTab is "products" or "videos" or "expenses" or "partners" or "users" or "orders" or "promotions" ? requestedTab : "overview";
+    var selectedUserGroup = Context.Request.Query["userGroup"].ToString() is "admin" or "employee" or "customer" ? Context.Request.Query["userGroup"].ToString() : "admin";
     var stockReceiptSaved = ViewData["StockReceiptSaved"] is true;
 }
 <section class="dashboard-page admin-dashboard">
     <div class="dashboard-heading"><div><span class="portal-kicker">ADMIN WORKSPACE · 01</span><h1>Quản trị cửa hàng</h1><p>Chọn một khu vực để quản lý mà không phải cuộn qua các mục khác.</p></div><span class="role-badge admin-badge">QUẢN TRỊ VIÊN</span></div>
     @if (TempData["Notice"] is string notice) { <div class="portal-alert success">@notice</div> }
     @if (TempData["Error"] is string error) { <div class="portal-alert danger">@error</div> }
-    <nav class="dashboard-tabs" aria-label="Khu vực quản trị"><a class="@(tab == "overview" ? "is-active" : "")" href="?tab=overview">Tổng quan</a><a class="@(tab == "products" ? "is-active" : "")" href="?tab=products">Sản phẩm & tồn kho</a><a class="@(tab == "videos" ? "is-active" : "")" href="?tab=videos">Video fashion</a><a class="@(tab == "expenses" ? "is-active" : "")" href="?tab=expenses">Nhập hàng & chi phí</a><a class="@(tab == "partners" ? "is-active" : "")" href="?tab=partners">Đối tác</a><a class="@(tab == "users" ? "is-active" : "")" href="?tab=users">Tài khoản & vai trò</a><a class="@(tab == "orders" ? "is-active" : "")" href="?tab=orders">Đơn hàng</a></nav>
+    <nav class="dashboard-tabs" aria-label="Khu vực quản trị"><a class="@(tab == "overview" ? "is-active" : "")" href="?tab=overview">Tổng quan</a><a class="@(tab == "products" ? "is-active" : "")" href="?tab=products">Sản phẩm & tồn kho</a><a class="@(tab == "videos" ? "is-active" : "")" href="?tab=videos">Video fashion</a><a class="@(tab == "expenses" ? "is-active" : "")" href="?tab=expenses">Nhập hàng & chi phí</a><a class="@(tab == "partners" ? "is-active" : "")" href="?tab=partners">Đối tác</a><a class="@(tab == "users" ? "is-active" : "")" href="?tab=users">Tài khoản & vai trò</a><a class="@(tab == "orders" ? "is-active" : "")" href="?tab=orders">Đơn hàng</a><a class="@(tab == "promotions" ? "is-active" : "")" href="?tab=promotions">Voucher</a></nav>
 
     @if (tab == "overview")
     {
@@ -24,6 +25,22 @@
             <article class="metric-card sales-metric"><span>ĐƠN HÀNG TRỪ CHI PHÍ ĐÃ GHI</span><strong>@Model.RecordedCashFlow.ToString("N0")₫</strong></article>
         </div>
         <p class="panel-help">Số chênh lệch tham khảo: doanh số đơn không bị hủy trừ tiền nhập hàng và chi phí vận hành đã ghi nhận; chưa phải số dư tiền thực tế.</p>
+        <section class="portal-panel low-stock-panel">
+            <div class="panel-heading"><div><span class="portal-kicker">CẢNH BÁO KHO · TỒN ≤ @Product.LowStockThreshold</span><h2>Sắp hết hàng</h2></div><a class="portal-outline-link" href="?tab=products">Quản lý tồn kho ↗</a></div>
+            @if (Model.LowStockProducts.Count == 0)
+            {
+                <p class="empty-orders">Chưa có sản phẩm nào dưới ngưỡng cảnh báo.</p>
+            }
+            else
+            {
+                <ul class="low-stock-list">
+                    @foreach (var product in Model.LowStockProducts)
+                    {
+                        <li><span><strong>@product.Name</strong><small>@product.Slug</small></span><b>@product.Stock còn</b></li>
+                    }
+                </ul>
+            }
+        </section>
     }
     else if (tab == "expenses")
     {
@@ -58,7 +75,7 @@
                     <select class="stock-product-template" data-stock-product-template aria-hidden="true" tabindex="-1"><option value=""></option>@foreach (var product in Model.Products) { <option value="@product.Slug">@product.Name</option> }</select>
                     <button class="mini-submit" type="button" data-stock-add-row>THÊM DÒNG SẢN PHẨM</button>
                     <div class="stock-receipt-summary">Tổng giá trị phiếu: <strong data-stock-total>0 ₫</strong></div>
-                    <label class="wide-field">Ghi chú phiếu<input name="Notes" class="portal-input" maxlength="500" /></label>
+                    <label class="wide-field">Ghi chú phiếu (không bắt buộc)<input name="Notes" class="portal-input" maxlength="500" /></label>
                     <button class="mini-submit" type="submit">LƯU PHIẾU & CỘNG TỒN KHO</button>
                 </form>
             </section>
@@ -122,16 +139,65 @@
                 <button class="mini-submit" type="submit">TẠO TÀI KHOẢN NHÂN VIÊN</button>
             </form>
         </section>
-        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">PHÂN QUYỀN</span><h2>Tài khoản hệ thống</h2></div><span class="panel-count">@Model.Users.Count tài khoản</span></div>
-            <p class="panel-help">Đăng ký công khai luôn tạo khách hàng. Chỉ quản trị viên mới có thể thay đổi vai trò; không thể tự hạ quyền hoặc hạ quyền quản trị viên cuối cùng.</p>
-            <div class="table-scroll"><table class="management-table"><thead><tr><th>Thành viên</th><th>Email</th><th>Vai trò hiện tại</th><th>Đổi vai trò</th></tr></thead><tbody>
-            @foreach (var user in Model.Users)
-            {
-                <tr><td>@user.DisplayName</td><td>@user.Email</td><td><span class="role-badge">@user.Role</span></td><td><form asp-action="SetRole" method="post" class="inline-action-form"><input type="hidden" name="userId" value="@user.Id" /><select name="role" class="portal-select" aria-label="Vai trò của @user.Email">
-                    @foreach (var role in AppRoles.All) { if (role == user.Role) { <option value="@role" selected>@role</option> } else { <option value="@role">@role</option> } }
-                </select><button class="mini-submit" type="submit">Lưu</button></form></td></tr>
+        <section class="portal-panel management-panel admin-user-management" data-admin-user-management>
+            <div class="panel-heading"><div><span class="portal-kicker">PHÂN QUYỀN</span><h2>Danh sách tài khoản</h2></div><span class="panel-count">@Model.AdminUsers.Count quản trị · @Model.EmployeeUsers.Count nhân viên · @Model.CustomerUsers.Count khách hàng</span></div>
+            <p class="panel-help">Tài khoản được tách theo vai trò. Mỗi danh sách có ô tìm kiếm riêng; có thể đổi vai trò ở cột thao tác.</p>
+            <nav class="admin-user-tabs" aria-label="Loại tài khoản">
+                <button type="button" class="@(selectedUserGroup == "admin" ? "is-active" : "")" data-user-group-tab="admin" aria-pressed="@(selectedUserGroup == "admin" ? "true" : "false")">Quản trị viên (@Model.AdminUsers.Count)</button>
+                <button type="button" class="@(selectedUserGroup == "employee" ? "is-active" : "")" data-user-group-tab="employee" aria-pressed="@(selectedUserGroup == "employee" ? "true" : "false")">Nhân viên (@Model.EmployeeUsers.Count)</button>
+                <button type="button" class="@(selectedUserGroup == "customer" ? "is-active" : "")" data-user-group-tab="customer" aria-pressed="@(selectedUserGroup == "customer" ? "true" : "false")">Khách hàng (@Model.CustomerUsers.Count)</button>
+            </nav>
+            @{
+                var accountGroups = new[]
+                {
+                    (Key: "admin", Title: "Tài khoản quản trị viên", Empty: "Chưa có tài khoản quản trị viên.", Users: Model.AdminUsers),
+                    (Key: "employee", Title: "Tài khoản nhân viên", Empty: "Chưa có tài khoản nhân viên.", Users: Model.EmployeeUsers),
+                    (Key: "customer", Title: "Tài khoản khách hàng", Empty: "Chưa có tài khoản khách hàng.", Users: Model.CustomerUsers)
+                };
             }
-            </tbody></table></div>
+            @foreach (var group in accountGroups)
+            {
+                <div class="admin-user-group" data-user-group-panel="@group.Key" hidden="@(group.Key != selectedUserGroup ? "hidden" : null)">
+                    <div class="admin-user-group-heading"><h3>@group.Title</h3><span>@group.Users.Count tài khoản</span></div>
+                    <label class="admin-user-search-label">Tìm theo tên, email@(group.Key == "customer" ? ", số điện thoại, địa chỉ hoặc giới tính" : string.Empty)
+                        <input class="portal-input" type="search" data-user-search placeholder="Nhập từ khóa cần tìm..." autocomplete="off" />
+                    </label>
+                    @if (group.Users.Count == 0)
+                    {
+                        <p class="empty-orders" data-user-empty>@group.Empty</p>
+                    }
+                    else
+                    {
+                        <div class="table-scroll"><table class="management-table"><thead><tr><th>Thành viên</th><th>Email</th>@if (group.Key == "customer") { <th>Thông tin hồ sơ</th> }<th>Vai trò</th><th>Đổi vai trò</th></tr></thead><tbody>
+                        @foreach (var user in group.Users)
+                        {
+                            <tr data-user-row data-user-search-text="@user.DisplayName @user.Email @user.PhoneNumber @user.Address @user.Gender">
+                                <td>@user.DisplayName</td><td>@user.Email</td>
+                                @if (group.Key == "customer")
+                                {
+                                    <td><details class="admin-customer-details"><summary class="text-action">Xem chi tiết</summary><div class="admin-customer-profile">
+                                        @if (!string.IsNullOrWhiteSpace(user.AvatarImageId))
+                                        {
+                                            <img class="admin-customer-avatar" src="~/images/@user.AvatarImageId" alt="Ảnh đại diện của @user.DisplayName" />
+                                        }
+                                        else
+                                        {
+                                            <span class="admin-customer-avatar admin-customer-avatar-placeholder" aria-label="Chưa có ảnh đại diện">@(string.IsNullOrWhiteSpace(user.DisplayName) ? "?" : user.DisplayName.Trim()[0].ToString().ToUpperInvariant())</span>
+                                        }
+                                        <dl><div><dt>Số điện thoại</dt><dd>@(string.IsNullOrWhiteSpace(user.PhoneNumber) ? "Chưa cập nhật" : user.PhoneNumber)</dd></div><div><dt>Địa chỉ</dt><dd>@(string.IsNullOrWhiteSpace(user.Address) ? "Chưa cập nhật" : user.Address)</dd></div><div><dt>Giới tính</dt><dd>@(string.IsNullOrWhiteSpace(user.Gender) ? "Chưa cập nhật" : user.Gender)</dd></div></dl>
+                                    </div></details></td>
+                                }
+                                <td><span class="role-badge">@user.Role</span></td>
+                                <td><form asp-action="SetRole" method="post" class="inline-action-form"><input type="hidden" name="userId" value="@user.Id" /><input type="hidden" name="userGroup" value="@group.Key" /><select name="role" class="portal-select" aria-label="Vai trò của @user.Email">
+                                    @foreach (var role in AppRoles.All) { if (role == user.Role) { <option value="@role" selected>@role</option> } else { <option value="@role">@role</option> } }
+                                </select><button class="mini-submit" type="submit">Lưu</button></form></td>
+                            </tr>
+                        }
+                        <tr data-user-no-results hidden><td colspan="@(group.Key == "customer" ? 5 : 4)">Không tìm thấy tài khoản phù hợp.</td></tr>
+                        </tbody></table></div>
+                    }
+                </div>
+            }
         </section>
     }
     else if (tab == "orders")
@@ -141,7 +207,7 @@
             else { <div class="table-scroll"><table class="management-table"><thead><tr><th>Đơn</th><th>Khách hàng</th><th>Sản phẩm</th><th>Tổng</th><th>Trạng thái</th><th></th></tr></thead><tbody>
             @foreach (var order in Model.RecentOrders)
             {
-                <tr><td>#@order.Id.ToString("D6")<small>@order.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></td><td>@order.CustomerName<small>@order.Phone</small><small>@order.Address</small></td><td>@foreach (var item in order.Items) { <span>@item.ProductName · @item.Size × @item.Quantity<br /></span> }</td><td>@order.Total.ToString("N0")₫</td><td><span class="status-pill status-@order.Status.ToLowerInvariant()">@order.Status</span></td><td><a asp-controller="Staff" asp-action="Index" class="text-action">Xử lý</a></td></tr>
+                <tr><td>#@order.Id.ToString("D6")<small>@order.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></td><td>@order.CustomerName<small>@order.Phone</small><small>@order.Address</small></td><td>@foreach (var item in order.Items) { <span>@item.ProductName · @item.Size × @item.Quantity<br /></span> }</td><td>@order.Total.ToString("N0")₫@if (order.DiscountAmount > 0) { <small>Voucher @order.PromotionCode · −@order.DiscountAmount.ToString("N0")₫</small> }</td><td><span class="status-pill status-@order.Status.ToLowerInvariant()">@order.Status</span></td><td><a asp-controller="Staff" asp-action="Index" class="text-action">Xử lý</a></td></tr>
             }
             </tbody></table></div> }
         </section>
@@ -175,16 +241,43 @@
             }
         </section>
     }
-    else if (tab == "products")
+    else if (tab == "promotions")
     {
-        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">CATALOG · NHẬP BẢNG TÍNH</span><h2>Nạp nhanh nhiều sản phẩm</h2></div><span class="panel-count">Tối đa 500 dòng</span></div>
-            <p class="panel-help">Dán 7 hoặc 8 cột từ Excel/Google Sheets theo thứ tự: mã; tên; danh mục (women/men/accessories hoặc Nữ/Nam/Phụ kiện); giá bán; màu; kích cỡ; tồn đầu; mô tả (tùy chọn). Có thể dùng tab hoặc dấu chấm phẩy. Giá không dùng dấu phân cách hàng nghìn. Sản phẩm dùng ảnh mẫu theo danh mục, có thể thay ảnh sau.</p>
-            <form asp-action="ImportProducts" method="post" class="product-admin-form" data-product-bulk-form>
-                <label class="wide-field">Danh sách sản phẩm<textarea name="Rows" class="portal-input" rows="7" maxlength="250000" required placeholder="SKU-101;Áo sơ mi linen;men;590000;Trắng;S,M,L,XL;20;Sơ mi linen thoáng mát&#10;SKU-102;Túi đeo vai;accessories;790000;Nâu;ONE SIZE;8;Túi dáng gọn dùng hằng ngày"></textarea></label>
-                <small class="wide-field">Bạn cũng có thể dán hàng có tiêu đề nếu cột đầu tiên là “Slug”. Nạp thành công sẽ thêm tồn đầu vào sản phẩm, không tạo phiếu nhập/chi phí.</small>
-                <button class="mini-submit" type="submit">NẠP DANH SÁCH SẢN PHẨM</button>
+        <section class="portal-panel management-panel">
+            <div class="panel-heading"><div><span class="portal-kicker">CAMPAIGN · CREATE</span><h2>Tạo voucher giảm giá</h2></div></div>
+            <p class="panel-help">Mã được tính lại và xác nhận trên máy chủ khi khách đặt hàng. Thời hạn áp dụng theo giờ Việt Nam.</p>
+            <form asp-action="CreatePromotion" method="post" class="product-admin-form promotion-admin-form">
+                <label>Mã voucher<input name="Code" class="portal-input" minlength="3" maxlength="30" pattern="[A-Za-z0-9_-]+" placeholder="WELCOME10" required /><small>Chữ cái, số, dấu gạch ngang hoặc gạch dưới.</small></label>
+                <label>Loại giảm<select name="Type" class="portal-select" required><option value="Percentage">Theo phần trăm</option><option value="FixedAmount">Số tiền cố định</option></select></label>
+                <label>Mức giảm<input name="Value" class="portal-input" type="number" min="1" max="1000000000" step="0.01" value="10" required /><small>Phần trăm: 1–100. Số tiền: từ 1.000₫.</small></label>
+                <label>Đơn tối thiểu (₫)<input name="MinimumOrderAmount" class="portal-input" type="number" min="0" step="1000" value="0" required /></label>
+                <label>Giảm tối đa (₫)<input name="MaximumDiscountAmount" class="portal-input" type="number" min="1" step="1000" placeholder="Không giới hạn" /><small>Chỉ áp dụng cho voucher phần trăm.</small></label>
+                <label>Số lượt dùng tối đa<input name="MaximumRedemptions" class="portal-input" type="number" min="1" max="1000000" placeholder="Không giới hạn" /></label>
+                <label>Bắt đầu từ ngày<input name="StartsOn" class="portal-input" type="date" value="@DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).ToString("yyyy-MM-dd")" required /></label>
+                <label>Kết thúc hết ngày<input name="EndsOn" class="portal-input" type="date" /></label>
+                <button class="mini-submit" type="submit">TẠO VOUCHER</button>
             </form>
         </section>
+        <section class="portal-panel management-panel">
+            <div class="panel-heading"><div><span class="portal-kicker">CAMPAIGN · ACTIVE & HISTORY</span><h2>Danh sách voucher</h2></div><span class="panel-count">@Model.Promotions.Count mã</span></div>
+            @if (Model.Promotions.Count == 0)
+            {
+                <p class="empty-orders">Chưa có voucher nào. Tạo mã đầu tiên để khách có thể áp dụng tại giỏ hàng.</p>
+            }
+            else
+            {
+                <div class="table-scroll"><table class="management-table"><thead><tr><th>Mã</th><th>Mức giảm</th><th>Điều kiện</th><th>Thời hạn</th><th>Lượt dùng</th><th>Trạng thái</th><th>Hành động</th></tr></thead><tbody>
+                @foreach (var promotion in Model.Promotions)
+                {
+                    var isAvailable = promotion.IsAvailable(DateTime.UtcNow);
+                    <tr><td><strong>@promotion.Code</strong></td><td>@(promotion.Type == PromotionTypes.Percentage ? $"{promotion.Value:0.##}%" : $"{promotion.Value:N0}₫")@(promotion.MaximumDiscountAmount is not null ? $" · tối đa {promotion.MaximumDiscountAmount.Value:N0}₫" : string.Empty)</td><td>Đơn từ @promotion.MinimumOrderAmount.ToString("N0")₫</td><td>@promotion.StartsAtUtc.AddHours(7).ToString("dd/MM/yyyy") – @(promotion.EndsAtUtc?.AddHours(7).AddDays(-1).ToString("dd/MM/yyyy") ?? "Không giới hạn")</td><td>@promotion.RedemptionCount / @(promotion.MaximumRedemptions?.ToString() ?? "∞")</td><td><span class="status-pill">@(isAvailable ? "Đang áp dụng" : promotion.IsActive ? "Chưa khả dụng" : "Đã tắt")</span></td><td><form asp-action="SetPromotionVisibility" method="post"><input type="hidden" name="id" value="@promotion.Id" /><input type="hidden" name="isActive" value="@(!promotion.IsActive)" /><button class="mini-submit" type="submit">@(promotion.IsActive ? "TẮT MÃ" : "BẬT MÃ")</button></form></td></tr>
+                }
+                </tbody></table></div>
+            }
+        </section>
+    }
+    else if (tab == "products")
+    {
         <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">CATALOG · CREATE</span><h2>Thêm một sản phẩm</h2></div></div>
             <form asp-action="SaveProduct" method="post" enctype="multipart/form-data" class="product-admin-form">
                 <label>Mã sản phẩm<input name="Slug" class="portal-input" pattern="[A-Za-z0-9-]{2,20}" maxlength="20" placeholder="FS-101" required /></label><label>Tên sản phẩm<input name="Name" class="portal-input" maxlength="120" required /></label>
@@ -209,4 +302,5 @@
 </section>
 @section Scripts {
     <script src="~/js/admin-stock-receipts.js" asp-append-version="true"></script>
+    <script src="~/js/admin-users.js" asp-append-version="true"></script>
 }

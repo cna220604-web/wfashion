@@ -29,21 +29,29 @@
         else
         {
             <div class="fashion-video-feed" aria-label="Video thời trang">
-                @foreach (var video in Model)
+                @for (var index = 0; index < Model.Count; index++)
                 {
+                    var video = Model[index];
                     <article class="fashion-video-card">
-                        <video class="fashion-video-player" controls loop playsinline preload="metadata" aria-label="Video @video.Caption">
-                            <source src="@Url.Content($"~/videos/fashion/{video.VideoFileName}")" type="@(video.VideoFileName.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) ? "video/webm" : "video/mp4")" />
-                            Trình duyệt của bạn không hỗ trợ phát video.
-                        </video>
-                        <button class="fashion-video-sound" type="button" data-video-sound aria-label="Tắt tiếng video" aria-pressed="true">TẮT TIẾNG</button>
-                        <div class="fashion-video-overlay">
-                            <span class="fashion-video-caption">@video.Caption</span>
-                            <a class="fashion-video-product" href="@Url.Action("Index", "Home", new { product = video.ProductSlug })">
-                                <span>@video.ProductName</span>
-                                <strong>@video.ProductPrice.ToString("N0")₫ · XEM & MUA ↗</strong>
-                            </a>
+                        <div class="fashion-video-stage">
+                            <video class="fashion-video-player" controls loop playsinline preload="metadata" aria-label="Video @video.Caption">
+                                <source src="@Url.Content($"~/videos/fashion/{video.VideoFileName}")" type="@(video.VideoFileName.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) ? "video/webm" : "video/mp4")" />
+                                Trình duyệt của bạn không hỗ trợ phát video.
+                            </video>
+                            <div class="fashion-video-stage-top"><span>W STUDIO <i>·</i> LOOKBOOK</span><span>@((index + 1).ToString("D2")) / @Model.Count.ToString("D2")</span></div>
+                            <button class="fashion-video-sound" type="button" data-video-sound aria-label="Tắt tiếng video" aria-pressed="true">TẮT TIẾNG</button>
                         </div>
+                        <aside class="fashion-video-info">
+                            <span class="fashion-video-eyebrow">OUTFIT ĐANG ĐƯỢC YÊU THÍCH</span>
+                            <span class="fashion-video-index">LOOK @((index + 1).ToString("D2")) <i>—</i> W STUDIO</span>
+                            <h2>@video.ProductName</h2>
+                            <p>@video.Caption</p>
+                            <div class="fashion-video-price">@video.ProductPrice.ToString("N0")<span>₫</span></div>
+                            <a class="fashion-video-product" href="@Url.Action("Index", "Home", new { product = video.ProductSlug })">
+                                <span>Xem sản phẩm</span><strong>KHÁM PHÁ LOOK <b aria-hidden="true">↗</b></strong>
+                            </a>
+                            <span class="fashion-video-scroll-hint"><i></i> CUỘN ĐỂ KHÁM PHÁ THÊM</span>
+                        </aside>
                     </article>
                 }
             </div>

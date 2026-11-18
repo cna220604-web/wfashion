@@ -67,7 +67,15 @@ public sealed class StaffController(
             PendingOrderCount = isOverview ? await database.Orders.CountAsync(order => order.Status == OrderStatuses.Pending) : 0,
             ProcessingOrderCount = isOverview ? await database.Orders.CountAsync(order => order.Status == OrderStatuses.Processing) : 0,
             ShippedOrderCount = isOverview ? await database.Orders.CountAsync(order => order.Status == OrderStatuses.Shipped) : 0,
-            LowStockCount = isOverview ? await database.Products.CountAsync(product => product.IsActive && product.Stock <= 5) : 0,
+            LowStockCount = isOverview ? await database.Products.CountAsync(product => product.IsActive && product.Stock <= Product.LowStockThreshold) : 0,
+            LowStockProducts = isOverview
+                ? await database.Products.AsNoTracking()
+                    .Where(product => product.IsActive && product.Stock <= Product.LowStockThreshold)
+                    .OrderBy(product => product.Stock)
+                    .ThenBy(product => product.Name)
+                    .Take(10)
+                    .ToListAsync()
+                : [],
             ProductReviewCount = isOverview ? await database.ProductReviews.CountAsync() : 0,
             StatusFilter = status,
             OrderSearch = search ?? string.Empty,
@@ -202,6 +210,7 @@ public sealed class StaffController(
         }
 
         order.Status = status;
+        order.StatusUpdatedAtUtc = DateTime.UtcNow;
         await database.SaveChangesAsync();
         await transaction.CommitAsync();
         var customer = await userManager.FindByIdAsync(order.UserId);

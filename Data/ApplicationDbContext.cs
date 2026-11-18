@@ -12,6 +12,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<CustomerOrder> Orders => Set<CustomerOrder>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
+    public DbSet<Promotion> Promotions => Set<Promotion>();
+    public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
     public DbSet<StockReceipt> StockReceipts => Set<StockReceipt>();
     public DbSet<StockReceiptNumber> StockReceiptNumbers => Set<StockReceiptNumber>();
     public DbSet<BusinessPartner> BusinessPartners => Set<BusinessPartner>();
@@ -24,6 +26,11 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         base.OnModelCreating(builder);
 
         builder.Entity<Product>().Property(product => product.Price).HasPrecision(12, 2);
+        builder.Entity<Promotion>().ToTable("Promotions");
+        builder.Entity<Promotion>().Property(promotion => promotion.Value).HasPrecision(12, 2);
+        builder.Entity<Promotion>().Property(promotion => promotion.MinimumOrderAmount).HasPrecision(12, 2);
+        builder.Entity<Promotion>().Property(promotion => promotion.MaximumDiscountAmount).HasPrecision(12, 2);
+        builder.Entity<Promotion>().HasIndex(promotion => promotion.NormalizedCode).IsUnique();
         builder.Entity<FashionVideo>().HasIndex(video => new { video.IsActive, video.CreatedAtUtc });
         builder.Entity<FashionVideo>().HasOne<Product>()
             .WithMany()
@@ -58,6 +65,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         builder.Entity<OperatingExpense>().Property(expense => expense.Notes).HasMaxLength(500);
         builder.Entity<OperatingExpense>().Property(expense => expense.RecordedBy).HasMaxLength(450);
         builder.Entity<CustomerOrder>().Property(order => order.Subtotal).HasPrecision(12, 2);
+        builder.Entity<CustomerOrder>().Property(order => order.DiscountAmount).HasPrecision(12, 2);
         builder.Entity<CustomerOrder>().Property(order => order.ShippingFee).HasPrecision(12, 2);
         builder.Entity<CustomerOrder>().Property(order => order.Total).HasPrecision(12, 2);
         builder.Entity<OrderItem>().Property(item => item.UnitPrice).HasPrecision(12, 2);
@@ -78,6 +86,13 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         builder.Entity<ProductReview>().HasIndex(review => new { review.CustomerOrderId, review.ProductSlug }).IsUnique();
         builder.Entity<ProductReview>().HasIndex(review => new { review.ProductSlug, review.CreatedAtUtc });
         builder.Entity<CustomerOrder>().HasIndex(order => new { order.UserId, order.CreatedAtUtc });
+        builder.Entity<WishlistItem>().HasKey(item => new { item.UserId, item.ProductSlug });
+        builder.Entity<WishlistItem>().HasOne<ApplicationUser>().WithMany()
+            .HasForeignKey(item => item.UserId).OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<WishlistItem>().HasOne<Product>().WithMany()
+            .HasForeignKey(item => item.ProductSlug).HasPrincipalKey(product => product.Slug)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<WishlistItem>().HasIndex(item => new { item.UserId, item.CreatedAtUtc });
         builder.Entity<SupportConversation>().HasIndex(conversation => new { conversation.CustomerUserId, conversation.ClientSessionId, conversation.Status });
         builder.Entity<SupportConversation>().HasIndex(conversation => new { conversation.AssignedEmployeeUserId, conversation.Status });
         builder.Entity<SupportConversation>().HasMany(conversation => conversation.Messages)

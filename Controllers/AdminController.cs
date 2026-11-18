@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text.RegularExpressions;
 using Amazon.S3;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -41,7 +39,7 @@ public sealed class AdminController(
 
     public async Task<IActionResult> Index(string? tab = null)
     {
-        tab = tab is "products" or "videos" or "expenses" or "partners" or "users" or "orders" ? tab : "overview";
+        tab = tab is "products" or "videos" or "expenses" or "partners" or "users" or "orders" or "promotions" ? tab : "overview";
         var isOverview = tab == "overview";
         var needsProducts = tab is "products" or "videos" or "expenses";
         ViewData["VideoStorageWarning"] = tab == "videos" && environment.IsProduction()
@@ -49,24 +47,16 @@ public sealed class AdminController(
             && !configuration.GetValue<bool>("Storage:AllowLocalVideoStorage");
         ViewData["StockReceiptSaved"] = (TempData["StockReceiptSaved"] as string) == "true";
 
-        var userRows = new List<AdminUserRow>();
+        IReadOnlyList<AdminUserRow> adminUsers = [];
+        IReadOnlyList<AdminUserRow> employeeUsers = [];
+        IReadOnlyList<AdminUserRow> customerUsers = [];
         var customerCount = 0;
         var employeeCount = 0;
         if (tab == "users")
         {
-            var users = await userManager.Users.OrderBy(user => user.Email).ToListAsync();
-            var rolesByUser = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var role in AppRoles.All)
-            {
-                foreach (var user in await userManager.GetUsersInRoleAsync(role))
-                {
-                    rolesByUser.TryAdd(user.Id, role);
-                }
-            }
-
-            userRows.AddRange(users.Select(user => new AdminUserRow(
-                user.Id, user.Email ?? "", user.DisplayName,
-                rolesByUser.GetValueOrDefault(user.Id, "—"))));
+            adminUsers = await GetAdminUserRowsAsync(AppRoles.Admin);
+            employeeUsers = await GetAdminUserRowsAsync(AppRoles.Employee);
+            customerUsers = await GetAdminUserRowsAsync(AppRoles.Customer);
         }
 
         if (isOverview)
@@ -80,6 +70,14 @@ public sealed class AdminController(
             CustomerCount = customerCount,
             EmployeeCount = employeeCount,
             ProductCount = isOverview ? await database.Products.CountAsync(product => product.IsActive) : 0,
+            LowStockProducts = isOverview
+                ? await database.Products.AsNoTracking()
+                    .Where(product => product.IsActive && product.Stock <= Product.LowStockThreshold)
+                    .OrderBy(product => product.Stock)
+                    .ThenBy(product => product.Name)
+                    .Take(10)
+                    .ToListAsync()
+                : [],
             PendingOrderCount = isOverview ? await database.Orders.CountAsync(order => order.Status == OrderStatuses.Pending) : 0,
             SalesTotal = isOverview
                 ? (await database.Orders.Where(order => order.Status != OrderStatuses.Cancelled).Select(order => order.Total).ToListAsync()).Sum()
@@ -106,13 +104,35 @@ public sealed class AdminController(
             FashionVideos = tab == "videos"
                 ? await database.FashionVideos.AsNoTracking().OrderByDescending(video => video.CreatedAtUtc).ToListAsync()
                 : [],
-            Users = userRows,
+            AdminUsers = adminUsers,
+            EmployeeUsers = employeeUsers,
+            CustomerUsers = customerUsers,
             RecentOrders = tab == "orders"
                 ? await database.Orders.AsNoTracking().Include(order => order.Items).OrderByDescending(order => order.CreatedAtUtc).Take(30).ToListAsync()
+                : [],
+            Promotions = tab == "promotions"
+                ? await database.Promotions.AsNoTracking().OrderByDescending(promotion => promotion.CreatedAtUtc).ToListAsync()
                 : []
         };
         model.RecordedCashFlow = model.SalesTotal - model.StockPurchaseTotal - model.OperatingExpenseTotal;
         return View(model);
+    }
+
+    private async Task<IReadOnlyList<AdminUserRow>> GetAdminUserRowsAsync(string role)
+    {
+        var users = await userManager.GetUsersInRoleAsync(role);
+        return users
+            .OrderBy(user => user.Email)
+            .Select(user => new AdminUserRow(
+                user.Id,
+                user.Email ?? string.Empty,
+                user.DisplayName,
+                role,
+                user.PhoneNumber,
+                user.Address,
+                user.Gender,
+                user.AvatarImageId))
+            .ToArray();
     }
 
     [HttpPost]
@@ -348,6 +368,68 @@ public sealed class AdminController(
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreatePromotion(PromotionCreateViewModel model)
+    {
+        var code = model.Code?.Trim().ToUpperInvariant() ?? string.Empty;
+        if (model.Type is not (PromotionTypes.Percentage or PromotionTypes.FixedAmount)
+            || (model.Type == PromotionTypes.Percentage && model.Value > 100)
+            || (model.Type == PromotionTypes.FixedAmount && model.Value < 1000)
+            || (model.Type == PromotionTypes.FixedAmount && model.MaximumDiscountAmount is not null)
+            || model.StartsOn == default
+            || model.EndsOn == DateOnly.MaxValue
+            || (model.EndsOn is not null && model.EndsOn < model.StartsOn)
+            || !ModelState.IsValid)
+        {
+            TempData["Error"] = "Thông tin voucher không hợp lệ. Hãy kiểm tra mã, mức giảm, điều kiện đơn tối thiểu và thời hạn.";
+            return RedirectToAction(nameof(Index), new { tab = "promotions" });
+        }
+
+        if (await database.Promotions.AnyAsync(item => item.NormalizedCode == code, HttpContext.RequestAborted))
+        {
+            TempData["Error"] = "Mã voucher này đã tồn tại.";
+            return RedirectToAction(nameof(Index), new { tab = "promotions" });
+        }
+
+        var startsAtUtc = new DateTimeOffset(model.StartsOn.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(7)).UtcDateTime;
+        DateTime? endsAtUtc = model.EndsOn is null
+            ? null
+            : new DateTimeOffset(model.EndsOn.Value.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(7)).UtcDateTime;
+        database.Promotions.Add(new Promotion
+        {
+            Code = code,
+            NormalizedCode = code,
+            Type = model.Type,
+            Value = model.Value,
+            MinimumOrderAmount = model.MinimumOrderAmount,
+            MaximumDiscountAmount = model.MaximumDiscountAmount,
+            MaximumRedemptions = model.MaximumRedemptions,
+            StartsAtUtc = startsAtUtc,
+            EndsAtUtc = endsAtUtc,
+            IsActive = true
+        });
+        await database.SaveChangesAsync(HttpContext.RequestAborted);
+        TempData["Notice"] = $"Đã tạo voucher {code}. Khách hàng có thể áp dụng tại giỏ hàng.";
+        return RedirectToAction(nameof(Index), new { tab = "promotions" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetPromotionVisibility(int id, bool isActive)
+    {
+        var promotion = await database.Promotions.FirstOrDefaultAsync(item => item.Id == id, HttpContext.RequestAborted);
+        if (promotion is null)
+        {
+            return NotFound();
+        }
+
+        promotion.IsActive = isActive;
+        await database.SaveChangesAsync(HttpContext.RequestAborted);
+        TempData["Notice"] = isActive ? $"Voucher {promotion.Code} đã được bật." : $"Voucher {promotion.Code} đã được tắt.";
+        return RedirectToAction(nameof(Index), new { tab = "promotions" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateEmployee(EmployeeCreateViewModel model)
     {
         if (!ModelState.IsValid)
@@ -480,111 +562,6 @@ public sealed class AdminController(
         TempData["Notice"] = "Video đã được xóa.";
         return RedirectToAction(nameof(Index), new { tab = "videos" });
     }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    [RequestSizeLimit(300_000)]
-    public async Task<IActionResult> ImportProducts(ProductBulkImportViewModel model)
-    {
-        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(model.Rows))
-        {
-            TempData["Error"] = "Hãy dán danh sách sản phẩm trước khi nạp.";
-            return RedirectToAction(nameof(Index), new { tab = "products" });
-        }
-
-        var rows = model.Rows.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (rows.Length > 500)
-        {
-            TempData["Error"] = "Mỗi lần nạp tối đa 500 sản phẩm.";
-            return RedirectToAction(nameof(Index), new { tab = "products" });
-        }
-
-        var products = new List<Product>();
-        var seenSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        for (var index = 0; index < rows.Length; index++)
-        {
-            var columns = rows[index].Split(rows[index].Contains('\t') ? '\t' : ';').Select(value => value.Trim()).ToArray();
-            if (index == 0 && columns[0].Equals("slug", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            if (columns.Length is not (7 or 8))
-            {
-                TempData["Error"] = $"Dòng {index + 1}: cần 7 hoặc 8 cột: mã, tên, danh mục, giá bán, màu, kích cỡ, tồn kho, mô tả (mô tả có thể bỏ trống).";
-                return RedirectToAction(nameof(Index), new { tab = "products" });
-            }
-
-            var slug = columns[0];
-            var name = columns[1];
-            var category = NormalizeProductCategory(columns[2]);
-            var sizeParts = columns[5].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (!Regex.IsMatch(slug, "^[A-Za-z0-9-]{2,20}$") || name.Length is < 2 or > 120 || category is null ||
-                !decimal.TryParse(columns[3], NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var price) || price is < 1000 or > 100000000 ||
-                columns[4].Length > 60 || columns[5].Length is 0 or > 100 || sizeParts.Length == 0 || sizeParts.Any(size => size.Length > 30) ||
-                !int.TryParse(columns[6], NumberStyles.None, CultureInfo.InvariantCulture, out var stock) || stock is < 0 or > 100000 ||
-                (columns.Length == 8 && columns[7].Length > 500) || !seenSlugs.Add(slug))
-            {
-                TempData["Error"] = $"Dòng {index + 1}: dữ liệu không hợp lệ hoặc mã sản phẩm bị trùng. Kiểm tra mã, tên, danh mục, giá, kích cỡ và tồn kho.";
-                return RedirectToAction(nameof(Index), new { tab = "products" });
-            }
-
-            products.Add(new Product
-            {
-                Slug = slug,
-                Name = name,
-                Category = category,
-                Price = price,
-                ImageId = DefaultProductImage(category),
-                Color = columns[4],
-                SizesCsv = string.Join(',', sizeParts.Distinct(StringComparer.OrdinalIgnoreCase)),
-                Stock = stock,
-                Description = columns.Length == 8 ? columns[7] : string.Empty,
-                IsActive = true
-            });
-        }
-
-        if (products.Count == 0)
-        {
-            TempData["Error"] = "Danh sách không có sản phẩm hợp lệ để nạp.";
-            return RedirectToAction(nameof(Index), new { tab = "products" });
-        }
-
-        var slugs = products.Select(product => product.Slug).ToArray();
-        var existingSlugs = await database.Products.AsNoTracking()
-            .Where(product => slugs.Contains(product.Slug))
-            .Select(product => product.Slug)
-            .ToListAsync(HttpContext.RequestAborted);
-        var existingSlugSet = existingSlugs.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var duplicateSlug = products.FirstOrDefault(product => existingSlugSet.Contains(product.Slug));
-        if (duplicateSlug is not null)
-        {
-            TempData["Error"] = $"Mã sản phẩm {duplicateSlug.Slug} đã tồn tại. Không có sản phẩm nào được nạp.";
-            return RedirectToAction(nameof(Index), new { tab = "products" });
-        }
-
-        await using var transaction = await database.Database.BeginTransactionAsync(HttpContext.RequestAborted);
-        database.Products.AddRange(products);
-        await database.SaveChangesAsync(HttpContext.RequestAborted);
-        await transaction.CommitAsync(HttpContext.RequestAborted);
-        TempData["Notice"] = $"Đã nạp {products.Count} sản phẩm. Ảnh đang dùng ảnh mẫu theo danh mục; có thể thay sau trong phần chỉnh sửa.";
-        return RedirectToAction(nameof(Index), new { tab = "products" });
-    }
-
-    private static string? NormalizeProductCategory(string category) => category.Trim().ToLowerInvariant() switch
-    {
-        "women" or "nu" or "nữ" => "women",
-        "men" or "nam" => "men",
-        "accessories" or "phukien" or "phụ kiện" => "accessories",
-        _ => null
-    };
-
-    private static string DefaultProductImage(string category) => category switch
-    {
-        "men" => "photo-1598033129183-c4f50c736f10",
-        "accessories" => "photo-1584917865442-de89df76afd3",
-        _ => "photo-1539109136881-3be0616acf4b"
-    };
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -949,8 +926,9 @@ public sealed class AdminController(
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SetRole(string userId, string role)
+    public async Task<IActionResult> SetRole(string userId, string role, string? userGroup)
     {
+        userGroup = userGroup is "admin" or "employee" or "customer" ? userGroup : "admin";
         if (!AppRoles.All.Contains(role, StringComparer.Ordinal))
         {
             return BadRequest();
@@ -965,7 +943,7 @@ public sealed class AdminController(
         if (target.Id == currentUserId)
         {
             TempData["Error"] = "Không thể tự thay đổi vai trò của chính mình.";
-            return RedirectToAction(nameof(Index), new { tab = "users" });
+            return RedirectToAction(nameof(Index), new { tab = "users", userGroup });
         }
 
         await using var transaction = await database.Database.BeginTransactionAsync();
@@ -977,7 +955,7 @@ public sealed class AdminController(
             {
                 await transaction.RollbackAsync();
                 TempData["Error"] = "Không thể hạ quyền quản trị viên cuối cùng.";
-                return RedirectToAction(nameof(Index), new { tab = "users" });
+                return RedirectToAction(nameof(Index), new { tab = "users", userGroup });
             }
         }
 
@@ -986,18 +964,18 @@ public sealed class AdminController(
         {
             await transaction.RollbackAsync();
             TempData["Error"] = string.Join(" ", removeResult.Errors.Select(error => error.Description));
-            return RedirectToAction(nameof(Index), new { tab = "users" });
+            return RedirectToAction(nameof(Index), new { tab = "users", userGroup });
         }
         var addResult = await userManager.AddToRoleAsync(target, role);
         if (!addResult.Succeeded)
         {
             await transaction.RollbackAsync();
             TempData["Error"] = string.Join(" ", addResult.Errors.Select(error => error.Description));
-            return RedirectToAction(nameof(Index), new { tab = "users" });
+            return RedirectToAction(nameof(Index), new { tab = "users", userGroup });
         }
 
         await transaction.CommitAsync();
         TempData["Notice"] = "Vai trò tài khoản đã được cập nhật.";
-        return RedirectToAction(nameof(Index), new { tab = "users" });
+        return RedirectToAction(nameof(Index), new { tab = "users", userGroup });
     }
 }

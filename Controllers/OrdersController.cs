@@ -18,7 +18,8 @@ public sealed class OrdersController(
     OrderNotificationService notifications,
     IWebHostEnvironment environment,
     IConfiguration configuration,
-    ILogger<OrdersController> logger) : Controller
+    ILogger<OrdersController> logger,
+    PromotionService promotions) : Controller
 {
     private const long MaxReturnVideoSize = 100L * 1024 * 1024;
     private const long MaxReturnRequestSize = MaxReturnVideoSize + 1024 * 1024;
@@ -94,6 +95,26 @@ public sealed class OrdersController(
             };
         }).ToList();
         var subtotal = orderItems.Sum(item => item.UnitPrice * item.Quantity);
+        Promotion? promotion = null;
+        var discountAmount = 0m;
+        if (!string.IsNullOrWhiteSpace(request.PromotionCode))
+        {
+            var validation = await promotions.ValidateAsync(request.PromotionCode, subtotal, cancellationToken);
+            if (!validation.IsValid)
+            {
+                return BadRequest(new { error = validation.Error });
+            }
+
+            promotion = await database.Promotions.SingleAsync(item => item.Id == validation.Promotion!.Id, cancellationToken);
+            if (!promotion.IsAvailable(DateTime.UtcNow) || subtotal < promotion.MinimumOrderAmount)
+            {
+                return Conflict(new { error = "Mã giảm giá vừa hết hạn hoặc hết lượt sử dụng. Hãy kiểm tra lại giỏ hàng." });
+            }
+
+            discountAmount = promotion.CalculateDiscount(subtotal);
+            promotion.RedemptionCount++;
+        }
+
         var shippingFee = subtotal >= 800000m ? 0m : 30000m;
         var order = new CustomerOrder
         {
@@ -105,9 +126,12 @@ public sealed class OrdersController(
             Status = OrderStatuses.Pending,
             PaymentMethod = "COD",
             Subtotal = subtotal,
+            PromotionCode = promotion?.Code,
+            DiscountAmount = discountAmount,
             ShippingFee = shippingFee,
-            Total = subtotal + shippingFee,
+            Total = subtotal - discountAmount + shippingFee,
             CreatedAtUtc = DateTime.UtcNow,
+            StatusUpdatedAtUtc = DateTime.UtcNow,
             Items = orderItems
         };
 
@@ -137,7 +161,8 @@ public sealed class OrdersController(
         }
 
         order.Status = OrderStatuses.Delivered;
-        order.ReceivedAtUtc = DateTime.UtcNow;
+        order.StatusUpdatedAtUtc = DateTime.UtcNow;
+        order.ReceivedAtUtc = order.StatusUpdatedAtUtc;
         await database.SaveChangesAsync(cancellationToken);
         var customer = await userManager.FindByIdAsync(userId!);
         await notifications.NotifyOrderStatusChangedAsync(order, customer?.Email, CancellationToken.None);
@@ -226,6 +251,7 @@ public sealed class OrdersController(
 
         await using var transaction = await database.Database.BeginTransactionAsync();
         order.Status = OrderStatuses.Cancelled;
+        order.StatusUpdatedAtUtc = DateTime.UtcNow;
         var items = await database.OrderItems.Where(item => item.CustomerOrderId == id).ToListAsync();
         foreach (var line in items)
         {

@@ -39,9 +39,13 @@ public sealed class CustomerOrder
     public string PaymentMethod { get; set; } = "COD";
 
     public decimal Subtotal { get; set; }
+    [StringLength(30)]
+    public string? PromotionCode { get; set; }
+    public decimal DiscountAmount { get; set; }
     public decimal ShippingFee { get; set; }
-    public decimal Total { get; set; }
+    public decimal Total { get; set;}
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? StatusUpdatedAtUtc { get; set; }
     public DateTime? ReceivedAtUtc { get; set; }
     public DateTime? ReturnRequestedAtUtc { get; set; }
 

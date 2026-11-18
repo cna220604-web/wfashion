@@ -128,6 +128,9 @@ public sealed class CheckoutRequest
     [StringLength(300)]
     public string? Note { get; set; }
 
+    [StringLength(30)]
+    public string? PromotionCode { get; set; }
+
     [Required, MinLength(1), MaxLength(30)]
     public List<CheckoutLineRequest> Items { get; set; } = [];
 }

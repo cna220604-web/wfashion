@@ -4,6 +4,8 @@ namespace WebApplication1.Models;
 
 public sealed class Product
 {
+    public const int LowStockThreshold = 5;
+
     [Key, StringLength(80)]
     public string Slug { get; set; } = string.Empty;
 

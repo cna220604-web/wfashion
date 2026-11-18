@@ -76,6 +76,7 @@
                     {
                         <article class="order-card">
                             <div class="order-card-head"><div><strong>Đơn #@order.Id.ToString("D6")</strong><span>@order.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span></div><span class="status-pill status-@order.Status.ToLowerInvariant()">@OrderStatusText(order.Status)</span></div>
+                            <p class="order-status-updated">Cập nhật trạng thái gần nhất: @((order.StatusUpdatedAtUtc ?? order.CreatedAtUtc).ToLocalTime().ToString("dd/MM/yyyy HH:mm"))</p>
                             <div class="order-lines">
                                 @{ var reviewedProducts = new HashSet<string>(StringComparer.Ordinal); }
                                 @foreach (var item in order.Items)
@@ -106,6 +107,10 @@
                                 }
                             </div>
                             <div class="order-card-foot"><span>COD · @order.Address</span><strong>@order.Total.ToString("N0")₫</strong></div>
+                            @if (order.DiscountAmount > 0)
+                            {
+                                <p class="order-promotion-note">Voucher @order.PromotionCode · đã giảm @order.DiscountAmount.ToString("N0")₫</p>
+                            }
                             @if (order.Status == OrderStatuses.Shipped)
                             {
                                 <form asp-controller="Orders" asp-action="ConfirmReceived" asp-route-id="@order.Id" method="post" class="order-confirm-received-form">
@@ -151,6 +156,26 @@
                         </article>
                     }
                 </div>
+            }
+        </section>
+        <section class="portal-panel customer-wishlist-panel">
+            <span class="portal-kicker">ĐÃ LƯU LẠI</span><h2>Sản phẩm yêu thích</h2>
+            @if (Model.SavedProducts.Count == 0)
+            {
+                <p class="empty-orders">Bạn chưa lưu sản phẩm nào. Hãy chạm biểu tượng trái tim khi xem bộ sưu tập.</p>
+            }
+            else
+            {
+                <div class="customer-wishlist-list">
+                    @foreach (var product in Model.SavedProducts)
+                    {
+                        <a class="customer-wishlist-item" href="@Url.Action("Index", "Home", new { product = product.Slug })">
+                            <span><strong>@product.Name</strong><small>@(product.Stock > 0 ? $"Còn hàng · {product.Stock} sản phẩm" : "Tạm hết hàng")</small></span>
+                            <b>@product.Price.ToString("N0")₫</b>
+                        </a>
+                    }
+                </div>
+                <a class="portal-outline-link" asp-controller="Home" asp-action="Index">Tiếp tục mua sắm ↗</a>
             }
         </section>
     </div>

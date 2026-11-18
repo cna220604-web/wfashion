@@ -12,6 +12,7 @@
         image = product.ImageId,
         description = product.Description,
         sizes = product.Sizes,
+        sizesCsv = product.SizesCsv,
         color = product.Color,
         stock = product.Stock,
         review = Model.Reviews.TryGetValue(product.Slug, out var summary)
@@ -33,6 +34,7 @@
     <title>@ViewData["Title"] — W Studio</title>
     <link rel="manifest" href="~/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="~/images/pwa/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/editorial.css" asp-append-version="true" />
 </head>
@@ -48,7 +50,10 @@
             <a asp-controller="Home" asp-action="Magazine">Tạp chí</a>
         </nav>
         <div class="header-actions">
-            <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Tìm sản phẩm" aria-label="Tìm sản phẩm" /></label>
+            <div class="store-search">
+                <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Tìm sản phẩm" aria-label="Tìm sản phẩm" aria-controls="search-suggestions" aria-expanded="false" autocomplete="off" /></label>
+                <div id="search-suggestions" class="search-suggestions" role="listbox" aria-label="Gợi ý sản phẩm" hidden></div>
+            </div>
             <button id="favorites-filter" class="icon-button favorite-filter" type="button" aria-label="Lọc sản phẩm yêu thích" aria-pressed="false">♡</button>
             <button id="open-cart" class="cart-trigger" type="button" aria-label="Mở giỏ hàng">TÚI <span id="cart-count">0</span></button>
             <button class="install-app-button" type="button" data-install-app hidden>CÀI ỨNG DỤNG</button>
@@ -190,7 +195,9 @@
         <div id="cart-empty" class="cart-empty" hidden><p>Túi đang chờ một món đồ đặc biệt.</p><button class="text-link" type="button" data-close="cart-dialog">Khám phá bộ sưu tập ↗</button></div>
         <div id="cart-summary" class="cart-summary">
             <div class="shipping-note">Miễn phí giao hàng cho đơn từ 800.000₫</div>
+            <div class="promotion-entry"><label for="promotion-code">Mã giảm giá</label><div><input id="promotion-code" maxlength="30" placeholder="Nhập mã voucher" autocomplete="off" /><button id="apply-promotion" type="button">ÁP DỤNG</button></div><p id="promotion-feedback" role="status" aria-live="polite" hidden></p></div>
             <div class="summary-line"><span>Tạm tính</span><strong id="subtotal-value"></strong></div>
+            <div id="promotion-discount-line" class="summary-line promotion-discount-line" hidden><span>Giảm giá · <b id="promotion-code-label"></b></span><strong id="promotion-discount-value"></strong></div>
             <div class="summary-line"><span>Giao hàng</span><strong id="shipping-value"></strong></div>
             <div class="summary-line total-line"><span>Tổng cộng</span><strong id="total-value"></strong></div>
             <button id="checkout-button" class="solid-button" type="button">TIẾP TỤC ĐẶT HÀNG <span aria-hidden="true">→</span></button>
@@ -232,8 +239,9 @@
         <p class="chat-disclaimer">Stylist chỉ gợi ý sản phẩm đang bán; vui lòng kiểm tra size và tồn kho trước khi đặt.</p>
     </section>
     <div id="store-toast" class="store-toast" role="status" aria-live="polite" hidden></div>
+    <form id="store-antiforgery" hidden>@Html.AntiForgeryToken()</form>
 
-    <script id="storefront-data" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { products = storefrontProducts, isCustomer = User.IsInRole(AppRoles.Customer), isAuthenticated }, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)))</script>
+    <script id="storefront-data" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { products = storefrontProducts, favoriteProductSlugs = Model.FavoriteProductSlugs, isCustomer = User.IsInRole(AppRoles.Customer), isAuthenticated }, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)))</script>
     <script src="~/js/pwa.js" asp-append-version="true"></script>
     <script src="~/js/storefront.js" asp-append-version="true"></script>
 </body>
