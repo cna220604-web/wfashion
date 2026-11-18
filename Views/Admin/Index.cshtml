@@ -3,6 +3,7 @@
     ViewData["Title"] = "Quản trị hệ thống";
     var requestedTab = Context.Request.Query["tab"].ToString();
     var tab = requestedTab is "products" or "videos" or "expenses" or "partners" or "users" or "orders" ? requestedTab : "overview";
+    var stockReceiptSaved = ViewData["StockReceiptSaved"] is true;
 }
 <section class="dashboard-page admin-dashboard">
     <div class="dashboard-heading"><div><span class="portal-kicker">ADMIN WORKSPACE · 01</span><h1>Quản trị cửa hàng</h1><p>Chọn một khu vực để quản lý mà không phải cuộn qua các mục khác.</p></div><span class="role-badge admin-badge">QUẢN TRỊ VIÊN</span></div>
@@ -26,28 +27,19 @@
     }
     else if (tab == "expenses")
     {
-        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">KHO · TẠO MẶT HÀNG MỚI</span><h2>Tạo nhanh sản phẩm để nhập kho</h2></div></div>
-            <p class="panel-help">Tạo mã hàng với tồn kho ban đầu bằng 0; sau khi lưu, sản phẩm sẽ xuất hiện ngay trong danh sách chọn ở phiếu nhập bên dưới. Ảnh mẫu có thể thay sau.</p>
-            <form asp-action="QuickCreateProduct" method="post" class="product-admin-form">
-                <label>Mã sản phẩm<input name="Slug" class="portal-input" pattern="[A-Za-z0-9-]{2,20}" maxlength="20" placeholder="SKU-101" required /></label>
-                <label>Tên sản phẩm<input name="Name" class="portal-input" minlength="2" maxlength="120" required /></label>
-                <label>Danh mục<select name="Category" class="portal-select" required><option value="women">Đồ nữ</option><option value="men">Đồ nam</option><option value="accessories">Phụ kiện</option></select></label>
-                <label>Giá bán (₫)<input name="Price" class="portal-input" type="number" min="1000" max="100000000" step="1000" required /></label>
-                <label>Màu sắc<input name="Color" class="portal-input" maxlength="60" /></label>
-                <label>Kích cỡ<input name="SizesCsv" class="portal-input" value="S,M,L" maxlength="100" required /></label>
-                <button class="mini-submit" type="submit">TẠO SẢN PHẨM & QUAY LẠI NHẬP HÀNG</button>
-            </form>
-        </section>
         <div class="admin-finance-forms">
-            <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">KHO · NHẬN HÀNG</span><h2>Nhập nhiều sản phẩm</h2></div></div>
-                <p class="panel-help">Dán danh sách từ Excel/Google Sheets hoặc thêm từng dòng. Mỗi dòng gồm mã sản phẩm, số lượng, giá nhập; toàn bộ phiếu được lưu cùng lúc.</p>
-                <form asp-action="RecordStockReceipt" method="post" class="product-admin-form finance-form stock-receipt-form" data-stock-receipt-form>
-                    <label class="wide-field">Nạp nhanh từ bảng tính<textarea class="portal-input stock-bulk-input" rows="4" data-stock-bulk-input placeholder="SKU-101;12;250000&#10;SKU-102;5;180000"></textarea><small>Dán 3 cột: mã sản phẩm, số lượng, giá nhập; phân cách bằng dấu chấm phẩy hoặc tab. Giá nhập không dùng dấu tách hàng nghìn.</small></label>
-                    <button class="mini-submit" type="button" data-stock-bulk-load>NẠP DANH SÁCH</button>
+            <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">KHO · NHẬN HÀNG</span><h2>Nhập hàng</h2></div><span class="panel-count">Tối đa 200 dòng / phiếu</span></div>
+                <p class="panel-help">Chọn nhà cung cấp, rồi dán các cột từ Excel/Google Sheets hoặc thêm dòng. Có thể dùng mã hàng hoặc dán nhiều dòng trùng mã; tồn kho và lịch sử được cập nhật trong cùng một lần lưu.</p>
+                <form asp-action="RecordStockReceipt" method="post" class="product-admin-form finance-form stock-receipt-form" data-stock-receipt-form data-stock-receipt-saved="@(stockReceiptSaved ? "true" : "false")">
+                    <label>Nhà cung cấp<select name="PartnerId" class="portal-select" required><option value="">Chọn đối tác</option>@foreach (var partner in Model.BusinessPartners.Where(partner => partner.IsActive)) { <option value="@partner.Id">@partner.Code · @partner.Name</option> }</select></label>
+                    <label>Ngày nhập<input name="ReceivedOn" class="portal-input" type="date" value="@DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).ToString("yyyy-MM-dd")" required /></label>
+                    <label>Mã phiếu tự động<input class="portal-input" value="PN-@Model.NextStockReceiptNumber.ToString("D6")" readonly aria-label="Mã phiếu nhập dự kiến" /><small>Mã chính thức được cấp khi lưu phiếu.</small></label>
+                    <label class="wide-field">Dán danh sách từ bảng tính<textarea class="portal-input stock-bulk-input" rows="4" data-stock-bulk-input placeholder="Mã sản phẩm&#9;Số lượng&#9;Giá nhập&#10;SKU-101&#9;12&#9;250000&#10;SKU-102&#9;5&#9;250.000"></textarea><small>Dán 3 cột mã sản phẩm, số lượng, giá nhập (Excel/Sheets hoặc dấu chấm phẩy). Giá chấp nhận dạng 250000, 250.000, 250,000 hoặc 250.000,50.</small></label>
+                    <div class="stock-bulk-actions"><button class="mini-submit" type="button" data-stock-bulk-load>NẠP DÒNG VÀO PHIẾU</button><button class="text-action" type="button" data-stock-clear-all>Xóa toàn bộ dòng</button></div>
                     <p class="stock-bulk-feedback" data-stock-bulk-error aria-live="polite"></p>
                     <div class="stock-receipt-lines" data-stock-lines>
                         <div class="stock-receipt-line" data-stock-row>
-                            <label for="stock-product-0">Sản phẩm<select id="stock-product-0" name="Items[0].ProductSlug" class="portal-select" data-stock-product required><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products) { <option value="@product.Slug">@product.Name · tồn @product.Stock</option> }</select></label>
+                            <label for="stock-product-0">Sản phẩm<select id="stock-product-0" name="Items[0].ProductSlug" class="portal-select" data-stock-product required><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products) { <option value="@product.Slug">@product.Slug · @product.Name · tồn @product.Stock</option> }</select></label>
                             <label for="stock-quantity-0">Số lượng<input id="stock-quantity-0" name="Items[0].Quantity" class="portal-input" type="number" min="1" max="100000" data-stock-quantity required /></label>
                             <label for="stock-cost-0">Giá nhập / sản phẩm (₫)<input id="stock-cost-0" name="Items[0].UnitCost" class="portal-input" type="number" min="1" max="9999999999.99" step="0.01" data-stock-unit-cost required /></label>
                             <div class="stock-line-total">Thành tiền <output data-stock-line-total>0 ₫</output></div>
@@ -56,7 +48,7 @@
                     </div>
                     <template data-stock-row-template>
                         <div class="stock-receipt-line" data-stock-row>
-                            <label for="stock-product-__index__">Sản phẩm<select id="stock-product-__index__" name="Items[__index__].ProductSlug" class="portal-select" data-stock-product required><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products) { <option value="@product.Slug">@product.Name · tồn @product.Stock</option> }</select></label>
+                            <label for="stock-product-__index__">Sản phẩm<select id="stock-product-__index__" name="Items[__index__].ProductSlug" class="portal-select" data-stock-product required><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products) { <option value="@product.Slug">@product.Slug · @product.Name · tồn @product.Stock</option> }</select></label>
                             <label for="stock-quantity-__index__">Số lượng<input id="stock-quantity-__index__" name="Items[__index__].Quantity" class="portal-input" type="number" min="1" max="100000" data-stock-quantity required /></label>
                             <label for="stock-cost-__index__">Giá nhập / sản phẩm (₫)<input id="stock-cost-__index__" name="Items[__index__].UnitCost" class="portal-input" type="number" min="1" max="9999999999.99" step="0.01" data-stock-unit-cost required /></label>
                             <div class="stock-line-total">Thành tiền <output data-stock-line-total>0 ₫</output></div>
@@ -66,10 +58,7 @@
                     <select class="stock-product-template" data-stock-product-template aria-hidden="true" tabindex="-1"><option value=""></option>@foreach (var product in Model.Products) { <option value="@product.Slug">@product.Name</option> }</select>
                     <button class="mini-submit" type="button" data-stock-add-row>THÊM DÒNG SẢN PHẨM</button>
                     <div class="stock-receipt-summary">Tổng giá trị phiếu: <strong data-stock-total>0 ₫</strong></div>
-                    <label>Ngày nhập<input name="ReceivedOn" class="portal-input" type="date" value="@DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).ToString("yyyy-MM-dd")" required /></label>
-                    <label>Nhà cung cấp<select name="PartnerId" class="portal-select" required><option value="">Chọn đối tác</option>@foreach (var partner in Model.BusinessPartners.Where(partner => partner.IsActive)) { <option value="@partner.Id">@partner.Code · @partner.Name</option> }</select></label>
-                    <label>Mã phiếu tự động<input class="portal-input" value="PN-@Model.NextStockReceiptNumber.ToString("D6")" readonly aria-label="Mã phiếu nhập dự kiến" /><small>Mã chính thức được cấp khi lưu phiếu.</small></label>
-                    <label class="wide-field">Ghi chú<input name="Notes" class="portal-input" maxlength="500" /></label>
+                    <label class="wide-field">Ghi chú phiếu<input name="Notes" class="portal-input" maxlength="500" /></label>
                     <button class="mini-submit" type="submit">LƯU PHIẾU & CỘNG TỒN KHO</button>
                 </form>
             </section>

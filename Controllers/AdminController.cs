@@ -33,7 +33,6 @@ public sealed class AdminController(
     private const long MaxFashionVideoSize = 100L * 1024 * 1024;
     private const long MaxFashionVideoRequestSize = MaxFashionVideoSize + 1024 * 1024;
     private const long MaxProductImageRequestSize = MaxProductImageSize + 1024 * 1024;
-    private const decimal MaxRecordedAmount = 9_999_999_999.99m;
     private static readonly string[] ExpenseCategories =
     [
         "Thuê mặt bằng", "Điện, nước, internet", "Lương nhân viên", "Marketing",
@@ -48,6 +47,7 @@ public sealed class AdminController(
         ViewData["VideoStorageWarning"] = tab == "videos" && environment.IsProduction()
             && !objectStorage.IsConfigured
             && !configuration.GetValue<bool>("Storage:AllowLocalVideoStorage");
+        ViewData["StockReceiptSaved"] = (TempData["StockReceiptSaved"] as string) == "true";
 
         var userRows = new List<AdminUserRow>();
         var customerCount = 0;
@@ -120,38 +120,50 @@ public sealed class AdminController(
     public async Task<IActionResult> RecordStockReceipt(StockReceiptBatchViewModel model)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
-        if (!ModelState.IsValid || model.Items.Count == 0 || model.ReceivedOn == default || model.ReceivedOn > today ||
-            model.Items.Any(item => item.Quantity * item.UnitCost > MaxRecordedAmount))
+        if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Thông tin nhập hàng không hợp lệ. Kiểm tra sản phẩm, số lượng, giá vốn và ngày nhập (không vượt quá hôm nay).";
-            return RedirectToAction(nameof(Index), new { tab = "expenses" });
+            var invalidFields = ModelState
+                .Where(entry => entry.Value?.Errors.Count > 0)
+                .Select(entry => entry.Key switch
+                {
+                    "PartnerId" => "nhà cung cấp",
+                    "ReceivedOn" => "ngày nhập",
+                    _ when entry.Key.Contains("ProductSlug", StringComparison.Ordinal) => "mã sản phẩm ở một dòng",
+                    _ when entry.Key.Contains("Quantity", StringComparison.Ordinal) => "số lượng ở một dòng",
+                    _ when entry.Key.Contains("UnitCost", StringComparison.Ordinal) => "giá nhập ở một dòng",
+                    _ when entry.Key.StartsWith("Items", StringComparison.Ordinal) => "danh sách sản phẩm",
+                    _ => entry.Key
+                })
+                .Distinct(StringComparer.Ordinal)
+                .Take(5)
+                .ToArray();
+            logger.LogWarning("Stock receipt rejected by model validation. Invalid fields: {InvalidFields}", string.Join(", ", invalidFields));
+            return RejectStockReceipt(invalidFields.Length > 0
+                ? $"Không thể nhập hàng: kiểm tra {string.Join(", ", invalidFields)}. Danh sách đã được giữ lại để sửa."
+                : "Thông tin nhập hàng không hợp lệ. Danh sách đã được giữ lại để sửa.");
         }
 
-        var duplicateProduct = model.Items
-            .GroupBy(item => item.ProductSlug.Trim(), StringComparer.OrdinalIgnoreCase)
-            .Any(group => group.Count() > 1);
-        if (duplicateProduct)
-        {
-            TempData["Error"] = "Mỗi sản phẩm chỉ được xuất hiện một lần trong cùng phiếu nhập. Gộp số lượng vào một dòng rồi thử lại.";
-            return RedirectToAction(nameof(Index), new { tab = "expenses" });
-        }
+        if (model.Items is null || model.Items.Count == 0)
+            return RejectStockReceipt("Phiếu chưa có sản phẩm. Hãy thêm ít nhất một dòng nhập hàng.");
+        if (model.ReceivedOn == default)
+            return RejectStockReceipt("Hãy chọn ngày nhập hàng.");
+        if (model.ReceivedOn > today)
+            return RejectStockReceipt("Ngày nhập không được vượt quá hôm nay.");
 
         var partner = await database.BusinessPartners.AsNoTracking()
             .SingleOrDefaultAsync(item => item.Id == model.PartnerId && item.IsActive, HttpContext.RequestAborted);
         if (partner is null)
         {
-            TempData["Error"] = "Hãy chọn một đối tác đang hoạt động làm nhà cung cấp.";
-            return RedirectToAction(nameof(Index), new { tab = "expenses" });
+            return RejectStockReceipt("Hãy chọn một đối tác đang hoạt động làm nhà cung cấp. Các dòng sản phẩm đã được giữ lại.");
         }
 
         var productSlugs = model.Items.Select(item => item.ProductSlug.Trim()).ToArray();
         var products = await database.Products.AsNoTracking()
             .Where(product => productSlugs.Contains(product.Slug))
             .ToDictionaryAsync(product => product.Slug, StringComparer.OrdinalIgnoreCase, HttpContext.RequestAborted);
-        if (products.Count != productSlugs.Length)
+        if (products.Count != productSlugs.Distinct(StringComparer.OrdinalIgnoreCase).Count())
         {
-            TempData["Error"] = "Không tìm thấy một hoặc nhiều sản phẩm trong phiếu nhập. Tải lại trang và kiểm tra danh sách sản phẩm.";
-            return RedirectToAction(nameof(Index), new { tab = "expenses" });
+            return RejectStockReceipt("Không tìm thấy một hoặc nhiều mã sản phẩm. Các dòng đã được giữ lại; hãy chọn lại mã đúng trong danh sách.");
         }
 
         var recordedBy = userManager.GetUserId(User)
@@ -178,8 +190,7 @@ public sealed class AdminController(
             if (updatedRows != 1)
             {
                 await transaction.RollbackAsync(HttpContext.RequestAborted);
-                TempData["Error"] = $"Không thể nhập {products[productSlug].Name} vì tồn kho sẽ vượt giới hạn 100.000. Không có dòng nào trong phiếu được lưu.";
-                return RedirectToAction(nameof(Index), new { tab = "expenses" });
+                return RejectStockReceipt($"Không thể nhập {products[productSlug].Name} vì tồn kho sẽ vượt giới hạn 100.000. Không dòng nào được lưu; danh sách vẫn được giữ lại.");
             }
 
             database.StockReceipts.Add(new StockReceipt
@@ -199,6 +210,13 @@ public sealed class AdminController(
         await database.SaveChangesAsync(HttpContext.RequestAborted);
         await transaction.CommitAsync(HttpContext.RequestAborted);
         TempData["Notice"] = $"Đã ghi nhận phiếu {reference} gồm {model.Items.Count} sản phẩm; tồn kho và lịch sử nhập đã được cập nhật.";
+        TempData["StockReceiptSaved"] = "true";
+        return RedirectToAction(nameof(Index), new { tab = "expenses" });
+    }
+
+    private IActionResult RejectStockReceipt(string error)
+    {
+        TempData["Error"] = error;
         return RedirectToAction(nameof(Index), new { tab = "expenses" });
     }
 
@@ -551,41 +569,6 @@ public sealed class AdminController(
         await transaction.CommitAsync(HttpContext.RequestAborted);
         TempData["Notice"] = $"Đã nạp {products.Count} sản phẩm. Ảnh đang dùng ảnh mẫu theo danh mục; có thể thay sau trong phần chỉnh sửa.";
         return RedirectToAction(nameof(Index), new { tab = "products" });
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> QuickCreateProduct(QuickProductCreateViewModel model)
-    {
-        var slug = model.Slug?.Trim() ?? string.Empty;
-        var sizes = model.SizesCsv?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
-        if (!ModelState.IsValid || sizes.Length == 0 || sizes.Any(size => size.Length > 30))
-        {
-            TempData["Error"] = "Thông tin sản phẩm mới không hợp lệ. Kiểm tra mã, tên, giá và kích cỡ.";
-            return RedirectToAction(nameof(Index), new { tab = "expenses" });
-        }
-
-        if (await database.Products.AnyAsync(product => product.Slug.ToUpper() == slug.ToUpper(), HttpContext.RequestAborted))
-        {
-            TempData["Error"] = $"Mã sản phẩm {slug} đã tồn tại. Hãy chọn mã khác hoặc chọn sản phẩm đó trong phiếu nhập.";
-            return RedirectToAction(nameof(Index), new { tab = "expenses" });
-        }
-
-        database.Products.Add(new Product
-        {
-            Slug = slug,
-            Name = model.Name.Trim(),
-            Category = model.Category,
-            Price = model.Price,
-            ImageId = DefaultProductImage(model.Category),
-            Color = model.Color?.Trim() ?? string.Empty,
-            SizesCsv = string.Join(',', sizes.Distinct(StringComparer.OrdinalIgnoreCase)),
-            Stock = 0,
-            IsActive = true
-        });
-        await database.SaveChangesAsync(HttpContext.RequestAborted);
-        TempData["Notice"] = $"Đã tạo sản phẩm {model.Name.Trim()} với tồn kho 0. Sản phẩm đã có trong lựa chọn của phiếu nhập.";
-        return RedirectToAction(nameof(Index), new { tab = "expenses" });
     }
 
     private static string? NormalizeProductCategory(string category) => category.Trim().ToLowerInvariant() switch

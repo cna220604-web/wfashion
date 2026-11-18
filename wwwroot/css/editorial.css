@@ -5128,6 +5128,19 @@ body.portal-layout {
   font-family: Consolas, monospace;
 }
 
+.admin-portal .stock-bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  grid-column: 1 / -1;
+}
+
+.admin-portal .stock-bulk-actions .mini-submit {
+  width: auto;
+  min-width: 220px;
+}
+
 .admin-portal .stock-product-template {
   display: none;
 }
