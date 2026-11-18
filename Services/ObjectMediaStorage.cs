@@ -10,6 +10,7 @@ public sealed class ObjectMediaStorage : IDisposable
     private readonly IAmazonS3? client;
 
     public bool IsConfigured => client is not null;
+    public string? PublicBaseUrl { get; }
 
     public ObjectMediaStorage(IConfiguration configuration)
     {
@@ -17,6 +18,17 @@ public sealed class ObjectMediaStorage : IDisposable
         bucket = configuration["Storage:S3:Bucket"];
         var accessKey = configuration["Storage:S3:AccessKey"];
         var secretKey = configuration["Storage:S3:SecretKey"];
+        var publicBaseUrl = configuration["Storage:S3:PublicBaseUrl"]?.TrimEnd('/');
+        if (!string.IsNullOrWhiteSpace(publicBaseUrl))
+        {
+            if (!Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out var publicUri) || publicUri.Scheme != Uri.UriSchemeHttps)
+            {
+                throw new InvalidOperationException("Storage:S3:PublicBaseUrl must be an HTTPS URL.");
+            }
+
+            PublicBaseUrl = publicBaseUrl;
+        }
+
         var values = new[] { endpoint, bucket, accessKey, secretKey };
         if (values.All(string.IsNullOrWhiteSpace))
         {

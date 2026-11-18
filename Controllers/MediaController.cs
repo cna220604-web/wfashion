@@ -32,6 +32,11 @@ public sealed class MediaController(
                 : NotFound();
         }
 
+        if (!string.IsNullOrWhiteSpace(objectStorage.PublicBaseUrl))
+        {
+            return Redirect($"{objectStorage.PublicBaseUrl}/videos/fashion/{Uri.EscapeDataString(fileName)}");
+        }
+
         var key = $"videos/fashion/{fileName}";
         GetObjectMetadataResponse metadata;
         try
