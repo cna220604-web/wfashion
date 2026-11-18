@@ -17,7 +17,7 @@ public sealed class RegisterViewModel
     [Display(Name = "Số điện thoại")]
     public string? PhoneNumber { get; set; }
 
-    [Required, DataType(DataType.Password), StringLength(100, MinimumLength = 8, ErrorMessage = "Mật khẩu phải có ít nhất 8 ký tự.")]
+    [Required, DataType(DataType.Password), StringLength(100)]
     [Display(Name = "Mật khẩu")]
     public string Password { get; set; } = string.Empty;
 
@@ -55,7 +55,7 @@ public sealed class ResetPasswordViewModel
     [Required]
     public string Token { get; set; } = string.Empty;
 
-    [Required, DataType(DataType.Password), StringLength(100, MinimumLength = 8, ErrorMessage = "Mật khẩu phải có ít nhất 8 ký tự.")]
+    [Required, DataType(DataType.Password), StringLength(100)]
     [Display(Name = "Mật khẩu mới")]
     public string Password { get; set; } = string.Empty;
 
@@ -78,7 +78,7 @@ public sealed class EmployeeCreateViewModel
     [Display(Name = "Số điện thoại")]
     public string? PhoneNumber { get; set; }
 
-    [Required, DataType(DataType.Password), StringLength(100, MinimumLength = 8, ErrorMessage = "Mật khẩu phải có ít nhất 8 ký tự.")]
+    [Required, DataType(DataType.Password), StringLength(100)]
     [Display(Name = "Mật khẩu tạm thời")]
     public string Password { get; set; } = string.Empty;
 

@@ -71,11 +71,8 @@ public sealed class StockReceiptBatchViewModel
     [Required, MinLength(1), MaxLength(200)]
     public List<StockReceiptLineViewModel> Items { get; set; } = [];
 
-    [StringLength(120)]
-    public string Supplier { get; set; } = string.Empty;
-
-    [StringLength(80)]
-    public string Reference { get; set; } = string.Empty;
+    [Range(1, int.MaxValue)]
+    public int PartnerId { get; set; }
 
     public DateOnly ReceivedOn { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
 

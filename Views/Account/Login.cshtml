@@ -1,9 +1,7 @@
-@using Microsoft.AspNetCore.Authentication
 @model LoginViewModel
 @{
     ViewData["Title"] = "Đăng nhập";
     var returnUrl = ViewData["ReturnUrl"] as string;
-    var externalLogins = ViewData["ExternalLogins"] as IEnumerable<AuthenticationScheme> ?? [];
 }
 <section class="portal-page">
     <div class="portal-card account-card">
@@ -18,10 +16,6 @@
             <span class="portal-kicker">CHÀO MỪNG TRỞ LẠI</span>
             <h1>Đăng nhập</h1>
             <p>Đăng nhập để quản lý đơn hàng và khám phá phong cách của bạn.</p>
-            @if (ViewData["ExternalLoginError"] is string externalLoginError)
-            {
-                <div class="validation-summary" role="alert">@externalLoginError</div>
-            }
             <form asp-action="Login" method="post">
                 <input type="hidden" name="returnUrl" value="@returnUrl" />
                 <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
@@ -34,19 +28,6 @@
                 <label class="portal-check"><input asp-for="RememberMe" /> Ghi nhớ đăng nhập trên thiết bị này</label>
                 <button class="portal-submit" type="submit">ĐĂNG NHẬP <span>→</span></button>
             </form>
-            @if (externalLogins.Any())
-            {
-                <div class="external-login-options">
-                    <span>HOẶC ĐĂNG NHẬP VỚI</span>
-                    @foreach (var login in externalLogins)
-                    {
-                        <form asp-action="ExternalLogin" method="post">
-                            <input type="hidden" name="returnUrl" value="@returnUrl" />
-                            <button class="external-login-button" type="submit" name="provider" value="@login.Name">@login.DisplayName</button>
-                        </form>
-                    }
-                </div>
-            }
             <a class="password-recovery-link" asp-action="ForgotPassword">Quên mật khẩu?</a>
             <div class="account-switch">Chưa có tài khoản? <a asp-action="Register" asp-route-returnUrl="@returnUrl">Tạo tài khoản khách hàng</a></div>
             <a class="portal-back" asp-controller="Home" asp-action="Index">← Quay lại cửa hàng</a>

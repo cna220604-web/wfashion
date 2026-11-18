@@ -18,7 +18,7 @@ services:
       - key: Storage__PersistentPath
         value: /var/data
       - key: Storage__AllowLocalVideoStorage
-        value: "false"
+        value: "true"
       - key: Storage__S3__Endpoint
         sync: false
       - key: Storage__S3__Bucket
@@ -26,6 +26,14 @@ services:
       - key: Storage__S3__AccessKey
         sync: false
       - key: Storage__S3__SecretKey
+        sync: false
+      - key: Authentication__Google__ClientId
+        sync: false
+      - key: Authentication__Google__ClientSecret
+        sync: false
+      - key: Authentication__Facebook__AppId
+        sync: false
+      - key: Authentication__Facebook__AppSecret
         sync: false
       - key: Ai__Model
         value: gemini-3-flash-preview

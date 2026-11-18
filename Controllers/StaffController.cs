@@ -21,16 +21,17 @@ public sealed class StaffController(
     private static string NormalizeDashboardTab(string? tab) =>
         tab is "support" or "orders" or "stock" or "feedback" ? tab : "overview";
 
-    private IActionResult RedirectToDashboard(string? tab) =>
-        RedirectToAction(nameof(Index), new { tab = NormalizeDashboardTab(tab) });
+    private IActionResult RedirectToDashboard(string? tab, string? status = null, string? search = null) =>
+        RedirectToAction(nameof(Index), new { tab = NormalizeDashboardTab(tab), status, search });
 
     private string ReturnVideoDirectory => Path.Combine(
         configuration["Storage:PersistentPath"] ?? environment.ContentRootPath,
         "private",
         "return-videos");
 
-    public async Task<IActionResult> Index(string? status = null, string? search = null)
+    public async Task<IActionResult> Index(string? tab = null, string? status = null, string? search = null)
     {
+        tab = NormalizeDashboardTab(tab);
         if (!string.IsNullOrWhiteSpace(status) && status != ReturnRequestedFilter && !OrderStatuses.All.Contains(status, StringComparer.Ordinal))
         {
             return BadRequest();
@@ -60,18 +61,19 @@ public sealed class StaffController(
                 order.Phone.Contains(search));
         }
 
+        var isOverview = tab == "overview";
         var model = new StaffDashboardViewModel
         {
-            PendingOrderCount = await database.Orders.CountAsync(order => order.Status == OrderStatuses.Pending),
-            ProcessingOrderCount = await database.Orders.CountAsync(order => order.Status == OrderStatuses.Processing),
-            ShippedOrderCount = await database.Orders.CountAsync(order => order.Status == OrderStatuses.Shipped),
-            LowStockCount = await database.Products.CountAsync(product => product.IsActive && product.Stock <= 5),
-            ProductReviewCount = await database.ProductReviews.CountAsync(),
+            PendingOrderCount = isOverview ? await database.Orders.CountAsync(order => order.Status == OrderStatuses.Pending) : 0,
+            ProcessingOrderCount = isOverview ? await database.Orders.CountAsync(order => order.Status == OrderStatuses.Processing) : 0,
+            ShippedOrderCount = isOverview ? await database.Orders.CountAsync(order => order.Status == OrderStatuses.Shipped) : 0,
+            LowStockCount = isOverview ? await database.Products.CountAsync(product => product.IsActive && product.Stock <= 5) : 0,
+            ProductReviewCount = isOverview ? await database.ProductReviews.CountAsync() : 0,
             StatusFilter = status,
             OrderSearch = search ?? string.Empty,
-            Orders = await orders.OrderByDescending(order => order.CreatedAtUtc).Take(100).ToListAsync(),
-            Products = await database.Products.AsNoTracking().OrderBy(product => product.Name).ToListAsync(),
-            RecentProductReviews = await (
+            Orders = tab == "orders" ? await orders.OrderByDescending(order => order.CreatedAtUtc).Take(100).ToListAsync() : [],
+            Products = tab == "stock" ? await database.Products.AsNoTracking().OrderBy(product => product.Name).ToListAsync() : [],
+            RecentProductReviews = tab == "feedback" ? await (
                 from review in database.ProductReviews.AsNoTracking()
                 join product in database.Products.AsNoTracking() on review.ProductSlug equals product.Slug
                 orderby review.CreatedAtUtc descending
@@ -88,7 +90,7 @@ public sealed class StaffController(
                     review.StaffReplyBy,
                     review.StaffRepliedAtUtc))
                 .Take(50)
-                .ToListAsync()
+                .ToListAsync() : []
         };
         return View(model);
     }
@@ -161,7 +163,7 @@ public sealed class StaffController(
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateOrderStatus(int id, string status, string? tab)
+    public async Task<IActionResult> UpdateOrderStatus(int id, string status, string? tab, string? statusFilter, string? search)
     {
         var order = await database.Orders.Include(item => item.Items).FirstOrDefaultAsync(item => item.Id == id);
         if (order is null)
@@ -179,29 +181,33 @@ public sealed class StaffController(
         if (!allowed.Contains(status, StringComparer.Ordinal))
         {
             TempData["Error"] = "Không thể chuyển đơn hàng sang trạng thái đã chọn.";
-            return RedirectToDashboard(tab);
+            return RedirectToDashboard(tab, statusFilter, search);
         }
 
         await using var transaction = await database.Database.BeginTransactionAsync();
-        order.Status = status;
         if (status == OrderStatuses.Cancelled)
         {
-            var lines = await database.OrderItems.Where(item => item.CustomerOrderId == id).ToListAsync();
-            foreach (var line in lines)
+            foreach (var line in order.Items)
             {
-                var product = await database.Products.FirstOrDefaultAsync(item => item.Slug == line.ProductSlug);
-                if (product is not null)
+                var restoredRows = await database.Products
+                    .Where(product => product.Slug == line.ProductSlug && product.Stock <= 100000 - line.Quantity)
+                    .ExecuteUpdateAsync(updates => updates.SetProperty(product => product.Stock, product => product.Stock + line.Quantity));
+                if (restoredRows != 1)
                 {
-                    product.Stock += line.Quantity;
+                    await transaction.RollbackAsync();
+                    TempData["Error"] = $"Không thể hủy đơn vì không thể hoàn đủ tồn kho cho {line.ProductName}. Kiểm tra tồn kho rồi thử lại; trạng thái đơn chưa thay đổi.";
+                    return RedirectToDashboard(tab, statusFilter, search);
                 }
             }
         }
+
+        order.Status = status;
         await database.SaveChangesAsync();
         await transaction.CommitAsync();
         var customer = await userManager.FindByIdAsync(order.UserId);
         await notifications.NotifyOrderStatusChangedAsync(order, customer?.Email, CancellationToken.None);
         TempData["Notice"] = "Trạng thái đơn hàng đã được cập nhật.";
-        return RedirectToDashboard(tab);
+        return RedirectToDashboard(tab, statusFilter, search);
     }
 
     [HttpPost]

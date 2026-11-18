@@ -24,6 +24,8 @@ public sealed class AdminDashboardViewModel
     public decimal OperatingExpenseTotal { get; init; }
     public decimal RecordedCashFlow { get; set; }
     public IReadOnlyList<StockReceipt> RecentStockReceipts { get; init; } = [];
+    public IReadOnlyList<BusinessPartner> BusinessPartners { get; init; } = [];
+    public int NextStockReceiptNumber { get; init; } = 1;
     public IReadOnlyList<OperatingExpense> RecentOperatingExpenses { get; init; } = [];
     public IReadOnlyList<Product> Products { get; init; } = [];
     public IReadOnlyList<FashionVideo> FashionVideos { get; init; } = [];

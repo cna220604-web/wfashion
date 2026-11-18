@@ -894,8 +894,14 @@ body.store-page {
 }
 
 .store-page .product-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 34px 18px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 28px 16px;
+}
+
+@media (max-width: 1100px) {
+  .store-page .product-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 900px) {
@@ -4992,8 +4998,14 @@ body.portal-layout {
 
 .external-login-options {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin: 20px 0;
+}
+
+.external-login-options > span,
+.external-login-note {
+  grid-column: 1 / -1;
 }
 
 .external-login-options > span {
@@ -5027,6 +5039,22 @@ body.portal-layout {
   transform: translateY(-1px);
   border-color: #bb8b52;
   background: #fbf3e8;
+}
+
+.external-login-button-disabled,
+.external-login-button-disabled:hover {
+  color: #766d67;
+  background: #f2eee8;
+  cursor: not-allowed;
+  opacity: .8;
+  transform: none;
+}
+
+.external-login-note {
+  color: #766d67;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .admin-portal .stock-receipt-form {

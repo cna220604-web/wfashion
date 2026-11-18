@@ -104,7 +104,7 @@ public sealed class AiProviderService(
 
     private static bool TryGetEndpoint(AiProviderSettings provider, out Uri endpoint)
     {
-        endpoint = default!;
+        endpoint = new Uri(OpenAiEndpoint);
         var type = provider.Type.Trim();
         if (type.Equals("Gemini", StringComparison.OrdinalIgnoreCase))
         {
@@ -117,7 +117,15 @@ public sealed class AiProviderService(
             type.Equals("Groq", StringComparison.OrdinalIgnoreCase))
         {
             var endpointValue = string.IsNullOrWhiteSpace(provider.Endpoint) ? OpenAiEndpoint : provider.Endpoint;
-            return Uri.TryCreate(endpointValue, UriKind.Absolute, out endpoint) && endpoint.Scheme == Uri.UriSchemeHttps;
+            if (!Uri.TryCreate(endpointValue, UriKind.Absolute, out var parsedEndpoint)
+                || parsedEndpoint is null
+                || parsedEndpoint.Scheme != Uri.UriSchemeHttps)
+            {
+                return false;
+            }
+
+            endpoint = parsedEndpoint;
+            return true;
         }
 
         return false;

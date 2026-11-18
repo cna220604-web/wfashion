@@ -13,6 +13,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
     public DbSet<StockReceipt> StockReceipts => Set<StockReceipt>();
+    public DbSet<StockReceiptNumber> StockReceiptNumbers => Set<StockReceiptNumber>();
+    public DbSet<BusinessPartner> BusinessPartners => Set<BusinessPartner>();
     public DbSet<OperatingExpense> OperatingExpenses => Set<OperatingExpense>();
     public DbSet<SupportConversation> SupportConversations => Set<SupportConversation>();
     public DbSet<SupportMessage> SupportMessages => Set<SupportMessage>();
@@ -36,6 +38,13 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         builder.Entity<StockReceipt>().Property(receipt => receipt.Reference).HasMaxLength(80);
         builder.Entity<StockReceipt>().Property(receipt => receipt.Notes).HasMaxLength(500);
         builder.Entity<StockReceipt>().Property(receipt => receipt.RecordedBy).HasMaxLength(450);
+        builder.Entity<StockReceiptNumber>().ToTable("StockReceiptNumbers");
+        builder.Entity<BusinessPartner>().ToTable("BusinessPartners");
+        builder.Entity<BusinessPartner>().Property(partner => partner.Name).HasMaxLength(120);
+        builder.Entity<BusinessPartner>().Property(partner => partner.NormalizedName).HasMaxLength(120);
+        builder.Entity<BusinessPartner>().Property(partner => partner.ContactName).HasMaxLength(100);
+        builder.Entity<BusinessPartner>().Property(partner => partner.Phone).HasMaxLength(30);
+        builder.Entity<BusinessPartner>().HasIndex(partner => partner.NormalizedName).IsUnique();
         builder.Entity<OperatingExpense>().ToTable("OperatingExpenses");
         builder.Entity<OperatingExpense>().Property(expense => expense.Amount).HasPrecision(12, 2);
         builder.Entity<OperatingExpense>().Property(expense => expense.Category).HasMaxLength(80);

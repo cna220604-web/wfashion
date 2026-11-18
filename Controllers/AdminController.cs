@@ -38,37 +38,79 @@ public sealed class AdminController(
         "Đóng gói & vận chuyển", "Phần mềm & công cụ", "Thuế & phí", "Sửa chữa", "Khác"
     ];
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? tab = null)
     {
-        ViewData["VideoStorageWarning"] = environment.IsProduction()
+        tab = tab is "products" or "videos" or "expenses" or "partners" or "users" or "orders" ? tab : "overview";
+        var isOverview = tab == "overview";
+        var needsProducts = tab is "products" or "videos" or "expenses";
+        ViewData["VideoStorageWarning"] = tab == "videos" && environment.IsProduction()
             && !objectStorage.IsConfigured
             && !configuration.GetValue<bool>("Storage:AllowLocalVideoStorage");
-        var users = await userManager.Users.OrderBy(user => user.Email).ToListAsync();
+        ViewData["LocalVideoStorageEnabled"] = tab == "videos" && environment.IsProduction()
+            && !objectStorage.IsConfigured
+            && configuration.GetValue<bool>("Storage:AllowLocalVideoStorage");
+
         var userRows = new List<AdminUserRow>();
-        foreach (var user in users)
+        var customerCount = 0;
+        var employeeCount = 0;
+        if (tab == "users")
         {
-            var userRoles = await userManager.GetRolesAsync(user);
-            userRows.Add(new AdminUserRow(user.Id, user.Email ?? "", user.DisplayName, userRoles.FirstOrDefault() ?? "—"));
+            var users = await userManager.Users.OrderBy(user => user.Email).ToListAsync();
+            var rolesByUser = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var role in AppRoles.All)
+            {
+                foreach (var user in await userManager.GetUsersInRoleAsync(role))
+                {
+                    rolesByUser.TryAdd(user.Id, role);
+                }
+            }
+
+            userRows.AddRange(users.Select(user => new AdminUserRow(
+                user.Id, user.Email ?? "", user.DisplayName,
+                rolesByUser.GetValueOrDefault(user.Id, "—"))));
         }
 
-        var orders = await database.Orders.AsNoTracking().Include(order => order.Items)
-            .OrderByDescending(order => order.CreatedAtUtc).Take(30).ToListAsync();
+        if (isOverview)
+        {
+            customerCount = (await userManager.GetUsersInRoleAsync(AppRoles.Customer)).Count;
+            employeeCount = (await userManager.GetUsersInRoleAsync(AppRoles.Employee)).Count;
+        }
+
         var model = new AdminDashboardViewModel
         {
-            CustomerCount = userRows.Count(user => user.Role == AppRoles.Customer),
-            EmployeeCount = userRows.Count(user => user.Role == AppRoles.Employee),
-            ProductCount = await database.Products.CountAsync(product => product.IsActive),
-            PendingOrderCount = await database.Orders.CountAsync(order => order.Status == OrderStatuses.Pending),
-            SalesTotal = (await database.Orders.Where(order => order.Status != OrderStatuses.Cancelled)
-                .Select(order => order.Total).ToListAsync()).Sum(),
-            StockPurchaseTotal = (await database.StockReceipts.AsNoTracking().Select(receipt => new { receipt.Quantity, receipt.UnitCost }).ToListAsync()).Sum(receipt => receipt.Quantity * receipt.UnitCost),
-            OperatingExpenseTotal = (await database.OperatingExpenses.AsNoTracking().Select(expense => expense.Amount).ToListAsync()).Sum(),
-            RecentStockReceipts = await database.StockReceipts.AsNoTracking().OrderByDescending(receipt => receipt.ReceivedOn).ThenByDescending(receipt => receipt.Id).Take(50).ToListAsync(),
-            RecentOperatingExpenses = await database.OperatingExpenses.AsNoTracking().OrderByDescending(expense => expense.SpentOn).ThenByDescending(expense => expense.Id).Take(50).ToListAsync(),
-            Products = await database.Products.AsNoTracking().OrderBy(product => product.Name).ToListAsync(),
-            FashionVideos = await database.FashionVideos.AsNoTracking().OrderByDescending(video => video.CreatedAtUtc).ToListAsync(),
+            CustomerCount = customerCount,
+            EmployeeCount = employeeCount,
+            ProductCount = isOverview ? await database.Products.CountAsync(product => product.IsActive) : 0,
+            PendingOrderCount = isOverview ? await database.Orders.CountAsync(order => order.Status == OrderStatuses.Pending) : 0,
+            SalesTotal = isOverview
+                ? (await database.Orders.Where(order => order.Status != OrderStatuses.Cancelled).Select(order => order.Total).ToListAsync()).Sum()
+                : 0,
+            StockPurchaseTotal = isOverview
+                ? (await database.StockReceipts.AsNoTracking().Select(receipt => new { receipt.Quantity, receipt.UnitCost }).ToListAsync()).Sum(receipt => receipt.Quantity * receipt.UnitCost)
+                : 0,
+            OperatingExpenseTotal = isOverview
+                ? (await database.OperatingExpenses.AsNoTracking().Select(expense => expense.Amount).ToListAsync()).Sum()
+                : 0,
+            RecentStockReceipts = tab == "expenses"
+                ? await database.StockReceipts.AsNoTracking().OrderByDescending(receipt => receipt.ReceivedOn).ThenByDescending(receipt => receipt.Id).Take(50).ToListAsync()
+                : [],
+            BusinessPartners = tab is "expenses" or "partners"
+                ? await database.BusinessPartners.AsNoTracking().OrderBy(partner => partner.Name).ToListAsync()
+                : [],
+            NextStockReceiptNumber = tab == "expenses"
+                ? (await database.StockReceiptNumbers.MaxAsync(number => (int?)number.Id) ?? 0) + 1
+                : 1,
+            RecentOperatingExpenses = tab == "expenses"
+                ? await database.OperatingExpenses.AsNoTracking().OrderByDescending(expense => expense.SpentOn).ThenByDescending(expense => expense.Id).Take(50).ToListAsync()
+                : [],
+            Products = needsProducts ? await database.Products.AsNoTracking().OrderBy(product => product.Name).ToListAsync() : [],
+            FashionVideos = tab == "videos"
+                ? await database.FashionVideos.AsNoTracking().OrderByDescending(video => video.CreatedAtUtc).ToListAsync()
+                : [],
             Users = userRows,
-            RecentOrders = orders
+            RecentOrders = tab == "orders"
+                ? await database.Orders.AsNoTracking().Include(order => order.Items).OrderByDescending(order => order.CreatedAtUtc).Take(30).ToListAsync()
+                : []
         };
         model.RecordedCashFlow = model.SalesTotal - model.StockPurchaseTotal - model.OperatingExpenseTotal;
         return View(model);
@@ -95,6 +137,14 @@ public sealed class AdminController(
             return RedirectToAction(nameof(Index), new { tab = "expenses" });
         }
 
+        var partner = await database.BusinessPartners.AsNoTracking()
+            .SingleOrDefaultAsync(item => item.Id == model.PartnerId && item.IsActive, HttpContext.RequestAborted);
+        if (partner is null)
+        {
+            TempData["Error"] = "Hãy chọn một đối tác đang hoạt động làm nhà cung cấp.";
+            return RedirectToAction(nameof(Index), new { tab = "expenses" });
+        }
+
         var productSlugs = model.Items.Select(item => item.ProductSlug.Trim()).ToArray();
         var products = await database.Products.AsNoTracking()
             .Where(product => productSlugs.Contains(product.Slug))
@@ -108,6 +158,18 @@ public sealed class AdminController(
         var recordedBy = userManager.GetUserId(User)
             ?? throw new InvalidOperationException("The authenticated administrator has no user identifier.");
         await using var transaction = await database.Database.BeginTransactionAsync(HttpContext.RequestAborted);
+        var receiptNumber = new StockReceiptNumber();
+        database.StockReceiptNumbers.Add(receiptNumber);
+        await database.SaveChangesAsync(HttpContext.RequestAborted);
+        var reference = $"PN-{receiptNumber.Id:D6}";
+        while (await database.StockReceipts.AnyAsync(receipt => receipt.Reference == reference, HttpContext.RequestAborted))
+        {
+            receiptNumber = new StockReceiptNumber();
+            database.StockReceiptNumbers.Add(receiptNumber);
+            await database.SaveChangesAsync(HttpContext.RequestAborted);
+            reference = $"PN-{receiptNumber.Id:D6}";
+        }
+
         foreach (var item in model.Items)
         {
             var productSlug = item.ProductSlug.Trim();
@@ -127,8 +189,8 @@ public sealed class AdminController(
                 ProductName = products[productSlug].Name,
                 Quantity = item.Quantity,
                 UnitCost = item.UnitCost,
-                Supplier = model.Supplier.Trim(),
-                Reference = model.Reference.Trim(),
+                Supplier = partner.Name,
+                Reference = reference,
                 ReceivedOn = model.ReceivedOn,
                 Notes = model.Notes.Trim(),
                 RecordedBy = recordedBy
@@ -137,8 +199,54 @@ public sealed class AdminController(
 
         await database.SaveChangesAsync(HttpContext.RequestAborted);
         await transaction.CommitAsync(HttpContext.RequestAborted);
-        TempData["Notice"] = $"Đã ghi nhận nhập kho {model.Items.Count} sản phẩm; tồn kho và lịch sử nhập đã được cập nhật.";
+        TempData["Notice"] = $"Đã ghi nhận phiếu {reference} gồm {model.Items.Count} sản phẩm; tồn kho và lịch sử nhập đã được cập nhật.";
         return RedirectToAction(nameof(Index), new { tab = "expenses" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateBusinessPartner(BusinessPartnerCreateViewModel model)
+    {
+        var name = model.Name?.Trim() ?? string.Empty;
+        if (!ModelState.IsValid || name.Length < 2)
+        {
+            TempData["Error"] = "Tên đối tác phải có từ 2 đến 120 ký tự.";
+            return RedirectToAction(nameof(Index), new { tab = "partners" });
+        }
+
+        var normalizedName = name.ToUpperInvariant();
+        if (await database.BusinessPartners.AnyAsync(partner => partner.NormalizedName == normalizedName, HttpContext.RequestAborted))
+        {
+            TempData["Error"] = "Tên đối tác này đã tồn tại.";
+            return RedirectToAction(nameof(Index), new { tab = "partners" });
+        }
+
+        database.BusinessPartners.Add(new BusinessPartner
+        {
+            Name = name,
+            NormalizedName = normalizedName,
+            ContactName = model.ContactName?.Trim() ?? string.Empty,
+            Phone = model.Phone?.Trim() ?? string.Empty
+        });
+        await database.SaveChangesAsync(HttpContext.RequestAborted);
+        TempData["Notice"] = $"Đã thêm đối tác {name}. Đối tác đang hoạt động đã có trong lựa chọn nhà cung cấp.";
+        return RedirectToAction(nameof(Index), new { tab = "partners" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetBusinessPartnerStatus(int id, bool isActive)
+    {
+        var partner = await database.BusinessPartners.SingleOrDefaultAsync(item => item.Id == id, HttpContext.RequestAborted);
+        if (partner is null)
+        {
+            return NotFound();
+        }
+
+        partner.IsActive = isActive;
+        await database.SaveChangesAsync(HttpContext.RequestAborted);
+        TempData["Notice"] = isActive ? $"Đã bật lại đối tác {partner.Name}." : $"Đã ngừng sử dụng đối tác {partner.Name}; lịch sử nhập hàng được giữ nguyên.";
+        return RedirectToAction(nameof(Index), new { tab = "partners" });
     }
 
     [HttpPost]
