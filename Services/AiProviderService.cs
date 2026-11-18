@@ -183,6 +183,27 @@ public sealed class AiProviderService(
         if (provider.Type.Equals("Gemini", StringComparison.OrdinalIgnoreCase))
         {
             request.Headers.Add("x-goog-api-key", provider.ApiKey);
+            var generationConfig = new Dictionary<string, object>
+            {
+                ["temperature"] = 0.55,
+                ["maxOutputTokens"] = 1600,
+                ["responseMimeType"] = "application/json",
+                ["responseSchema"] = new
+                {
+                    type = "OBJECT",
+                    properties = new
+                    {
+                        reply = new { type = "STRING" },
+                        recommendedProductCodes = new { type = "ARRAY", items = new { type = "STRING" } }
+                    },
+                    required = new[] { "reply", "recommendedProductCodes" }
+                }
+            };
+            if (provider.Model.StartsWith("gemini-3", StringComparison.OrdinalIgnoreCase))
+            {
+                generationConfig["thinkingConfig"] = new { thinkingLevel = "low" };
+            }
+
             request.Content = JsonContent.Create(new
             {
                 systemInstruction = new { parts = new[] { new { text = systemPrompt } } },
@@ -191,22 +212,7 @@ public sealed class AiProviderService(
                     role = message.Role == "assistant" ? "model" : "user",
                     parts = new[] { new { text = message.Content } }
                 }),
-                generationConfig = new
-                {
-                    temperature = 0.55,
-                    maxOutputTokens = 700,
-                    responseMimeType = "application/json",
-                    responseSchema = new
-                    {
-                        type = "OBJECT",
-                        properties = new
-                        {
-                            reply = new { type = "STRING" },
-                            recommendedProductCodes = new { type = "ARRAY", items = new { type = "STRING" } }
-                        },
-                        required = new[] { "reply", "recommendedProductCodes" }
-                    }
-                }
+                generationConfig
             }, options: JsonOptions);
             return request;
         }
@@ -245,12 +251,15 @@ public sealed class AiProviderService(
 
         if (providerType.Equals("Gemini", StringComparison.OrdinalIgnoreCase))
         {
-            if (root.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0 &&
-                candidates[0].TryGetProperty("content", out var content) && content.TryGetProperty("parts", out var parts))
+            if (root.TryGetProperty("candidates", out var candidates) && candidates.ValueKind == JsonValueKind.Array && candidates.GetArrayLength() > 0 &&
+                candidates[0].TryGetProperty("content", out var content) && content.TryGetProperty("parts", out var parts) && parts.ValueKind == JsonValueKind.Array)
             {
-                return parts.EnumerateArray()
-                    .Select(part => part.TryGetProperty("text", out var text) ? text.GetString() : null)
-                    .FirstOrDefault(text => !string.IsNullOrWhiteSpace(text));
+                var finalText = parts.EnumerateArray()
+                    .Where(part => !part.TryGetProperty("thought", out var thought) || thought.ValueKind != JsonValueKind.True)
+                    .Select(part => part.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String ? text.GetString() : null)
+                    .Where(text => !string.IsNullOrWhiteSpace(text));
+                var combinedText = string.Concat(finalText);
+                return string.IsNullOrWhiteSpace(combinedText) ? null : combinedText;
             }
 
             return null;

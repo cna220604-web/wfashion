@@ -26,6 +26,18 @@
     }
     else if (tab == "expenses")
     {
+        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">KHO · TẠO MẶT HÀNG MỚI</span><h2>Tạo nhanh sản phẩm để nhập kho</h2></div></div>
+            <p class="panel-help">Tạo mã hàng với tồn kho ban đầu bằng 0; sau khi lưu, sản phẩm sẽ xuất hiện ngay trong danh sách chọn ở phiếu nhập bên dưới. Ảnh mẫu có thể thay sau.</p>
+            <form asp-action="QuickCreateProduct" method="post" class="product-admin-form">
+                <label>Mã sản phẩm<input name="Slug" class="portal-input" pattern="[A-Za-z0-9-]{2,20}" maxlength="20" placeholder="SKU-101" required /></label>
+                <label>Tên sản phẩm<input name="Name" class="portal-input" minlength="2" maxlength="120" required /></label>
+                <label>Danh mục<select name="Category" class="portal-select" required><option value="women">Đồ nữ</option><option value="men">Đồ nam</option><option value="accessories">Phụ kiện</option></select></label>
+                <label>Giá bán (₫)<input name="Price" class="portal-input" type="number" min="1000" max="100000000" step="1000" required /></label>
+                <label>Màu sắc<input name="Color" class="portal-input" maxlength="60" /></label>
+                <label>Kích cỡ<input name="SizesCsv" class="portal-input" value="S,M,L" maxlength="100" required /></label>
+                <button class="mini-submit" type="submit">TẠO SẢN PHẨM & QUAY LẠI NHẬP HÀNG</button>
+            </form>
+        </section>
         <div class="admin-finance-forms">
             <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">KHO · NHẬN HÀNG</span><h2>Nhập nhiều sản phẩm</h2></div></div>
                 <p class="panel-help">Dán danh sách từ Excel/Google Sheets hoặc thêm từng dòng. Mỗi dòng gồm mã sản phẩm, số lượng, giá nhập; toàn bộ phiếu được lưu cùng lúc.</p>
@@ -177,7 +189,15 @@
     }
     else if (tab == "products")
     {
-        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">CATALOG · CREATE</span><h2>Thêm sản phẩm</h2></div></div>
+        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">CATALOG · NHẬP BẢNG TÍNH</span><h2>Nạp nhanh nhiều sản phẩm</h2></div><span class="panel-count">Tối đa 500 dòng</span></div>
+            <p class="panel-help">Dán 7 hoặc 8 cột từ Excel/Google Sheets theo thứ tự: mã; tên; danh mục (women/men/accessories hoặc Nữ/Nam/Phụ kiện); giá bán; màu; kích cỡ; tồn đầu; mô tả (tùy chọn). Có thể dùng tab hoặc dấu chấm phẩy. Giá không dùng dấu phân cách hàng nghìn. Sản phẩm dùng ảnh mẫu theo danh mục, có thể thay ảnh sau.</p>
+            <form asp-action="ImportProducts" method="post" class="product-admin-form" data-product-bulk-form>
+                <label class="wide-field">Danh sách sản phẩm<textarea name="Rows" class="portal-input" rows="7" maxlength="250000" required placeholder="SKU-101;Áo sơ mi linen;men;590000;Trắng;S,M,L,XL;20;Sơ mi linen thoáng mát&#10;SKU-102;Túi đeo vai;accessories;790000;Nâu;ONE SIZE;8;Túi dáng gọn dùng hằng ngày"></textarea></label>
+                <small class="wide-field">Bạn cũng có thể dán hàng có tiêu đề nếu cột đầu tiên là “Slug”. Nạp thành công sẽ thêm tồn đầu vào sản phẩm, không tạo phiếu nhập/chi phí.</small>
+                <button class="mini-submit" type="submit">NẠP DANH SÁCH SẢN PHẨM</button>
+            </form>
+        </section>
+        <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">CATALOG · CREATE</span><h2>Thêm một sản phẩm</h2></div></div>
             <form asp-action="SaveProduct" method="post" enctype="multipart/form-data" class="product-admin-form">
                 <label>Mã sản phẩm<input name="Slug" class="portal-input" pattern="[A-Za-z0-9-]{2,20}" maxlength="20" placeholder="FS-101" required /></label><label>Tên sản phẩm<input name="Name" class="portal-input" maxlength="120" required /></label>
                 <label>Danh mục cửa hàng<select name="Category" class="portal-select"><option value="women">Đồ nữ</option><option value="men">Đồ nam</option><option value="accessories">Phụ kiện</option></select></label><label>Giá (₫)<input name="Price" class="portal-input" type="number" min="1000" step="1000" required /></label>

@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Amazon.S3;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -409,6 +411,146 @@ public sealed class AdminController(
         TempData["Notice"] = "Video đã được xóa.";
         return RedirectToAction(nameof(Index), new { tab = "videos" });
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(300_000)]
+    public async Task<IActionResult> ImportProducts(ProductBulkImportViewModel model)
+    {
+        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(model.Rows))
+        {
+            TempData["Error"] = "Hãy dán danh sách sản phẩm trước khi nạp.";
+            return RedirectToAction(nameof(Index), new { tab = "products" });
+        }
+
+        var rows = model.Rows.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (rows.Length > 500)
+        {
+            TempData["Error"] = "Mỗi lần nạp tối đa 500 sản phẩm.";
+            return RedirectToAction(nameof(Index), new { tab = "products" });
+        }
+
+        var products = new List<Product>();
+        var seenSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var index = 0; index < rows.Length; index++)
+        {
+            var columns = rows[index].Split(rows[index].Contains('\t') ? '\t' : ';').Select(value => value.Trim()).ToArray();
+            if (index == 0 && columns[0].Equals("slug", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (columns.Length is not (7 or 8))
+            {
+                TempData["Error"] = $"Dòng {index + 1}: cần 7 hoặc 8 cột: mã, tên, danh mục, giá bán, màu, kích cỡ, tồn kho, mô tả (mô tả có thể bỏ trống).";
+                return RedirectToAction(nameof(Index), new { tab = "products" });
+            }
+
+            var slug = columns[0];
+            var name = columns[1];
+            var category = NormalizeProductCategory(columns[2]);
+            var sizeParts = columns[5].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (!Regex.IsMatch(slug, "^[A-Za-z0-9-]{2,20}$") || name.Length is < 2 or > 120 || category is null ||
+                !decimal.TryParse(columns[3], NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var price) || price is < 1000 or > 100000000 ||
+                columns[4].Length > 60 || columns[5].Length is 0 or > 100 || sizeParts.Length == 0 || sizeParts.Any(size => size.Length > 30) ||
+                !int.TryParse(columns[6], NumberStyles.None, CultureInfo.InvariantCulture, out var stock) || stock is < 0 or > 100000 ||
+                (columns.Length == 8 && columns[7].Length > 500) || !seenSlugs.Add(slug))
+            {
+                TempData["Error"] = $"Dòng {index + 1}: dữ liệu không hợp lệ hoặc mã sản phẩm bị trùng. Kiểm tra mã, tên, danh mục, giá, kích cỡ và tồn kho.";
+                return RedirectToAction(nameof(Index), new { tab = "products" });
+            }
+
+            products.Add(new Product
+            {
+                Slug = slug,
+                Name = name,
+                Category = category,
+                Price = price,
+                ImageId = DefaultProductImage(category),
+                Color = columns[4],
+                SizesCsv = string.Join(',', sizeParts.Distinct(StringComparer.OrdinalIgnoreCase)),
+                Stock = stock,
+                Description = columns.Length == 8 ? columns[7] : string.Empty,
+                IsActive = true
+            });
+        }
+
+        if (products.Count == 0)
+        {
+            TempData["Error"] = "Danh sách không có sản phẩm hợp lệ để nạp.";
+            return RedirectToAction(nameof(Index), new { tab = "products" });
+        }
+
+        var slugs = products.Select(product => product.Slug).ToArray();
+        var existingSlugs = await database.Products.AsNoTracking()
+            .Where(product => slugs.Contains(product.Slug))
+            .Select(product => product.Slug)
+            .ToListAsync(HttpContext.RequestAborted);
+        var existingSlugSet = existingSlugs.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var duplicateSlug = products.FirstOrDefault(product => existingSlugSet.Contains(product.Slug));
+        if (duplicateSlug is not null)
+        {
+            TempData["Error"] = $"Mã sản phẩm {duplicateSlug.Slug} đã tồn tại. Không có sản phẩm nào được nạp.";
+            return RedirectToAction(nameof(Index), new { tab = "products" });
+        }
+
+        await using var transaction = await database.Database.BeginTransactionAsync(HttpContext.RequestAborted);
+        database.Products.AddRange(products);
+        await database.SaveChangesAsync(HttpContext.RequestAborted);
+        await transaction.CommitAsync(HttpContext.RequestAborted);
+        TempData["Notice"] = $"Đã nạp {products.Count} sản phẩm. Ảnh đang dùng ảnh mẫu theo danh mục; có thể thay sau trong phần chỉnh sửa.";
+        return RedirectToAction(nameof(Index), new { tab = "products" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> QuickCreateProduct(QuickProductCreateViewModel model)
+    {
+        var slug = model.Slug?.Trim() ?? string.Empty;
+        var sizes = model.SizesCsv?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
+        if (!ModelState.IsValid || sizes.Length == 0 || sizes.Any(size => size.Length > 30))
+        {
+            TempData["Error"] = "Thông tin sản phẩm mới không hợp lệ. Kiểm tra mã, tên, giá và kích cỡ.";
+            return RedirectToAction(nameof(Index), new { tab = "expenses" });
+        }
+
+        if (await database.Products.AnyAsync(product => product.Slug.ToUpper() == slug.ToUpper(), HttpContext.RequestAborted))
+        {
+            TempData["Error"] = $"Mã sản phẩm {slug} đã tồn tại. Hãy chọn mã khác hoặc chọn sản phẩm đó trong phiếu nhập.";
+            return RedirectToAction(nameof(Index), new { tab = "expenses" });
+        }
+
+        database.Products.Add(new Product
+        {
+            Slug = slug,
+            Name = model.Name.Trim(),
+            Category = model.Category,
+            Price = model.Price,
+            ImageId = DefaultProductImage(model.Category),
+            Color = model.Color?.Trim() ?? string.Empty,
+            SizesCsv = string.Join(',', sizes.Distinct(StringComparer.OrdinalIgnoreCase)),
+            Stock = 0,
+            IsActive = true
+        });
+        await database.SaveChangesAsync(HttpContext.RequestAborted);
+        TempData["Notice"] = $"Đã tạo sản phẩm {model.Name.Trim()} với tồn kho 0. Sản phẩm đã có trong lựa chọn của phiếu nhập.";
+        return RedirectToAction(nameof(Index), new { tab = "expenses" });
+    }
+
+    private static string? NormalizeProductCategory(string category) => category.Trim().ToLowerInvariant() switch
+    {
+        "women" or "nu" or "nữ" => "women",
+        "men" or "nam" => "men",
+        "accessories" or "phukien" or "phụ kiện" => "accessories",
+        _ => null
+    };
+
+    private static string DefaultProductImage(string category) => category switch
+    {
+        "men" => "photo-1598033129183-c4f50c736f10",
+        "accessories" => "photo-1584917865442-de89df76afd3",
+        _ => "photo-1539109136881-3be0616acf4b"
+    };
 
     [HttpPost]
     [ValidateAntiForgeryToken]
