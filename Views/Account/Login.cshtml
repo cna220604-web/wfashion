@@ -25,7 +25,7 @@
                 <label asp-for="Password"></label>
                 <input asp-for="Password" class="portal-input" autocomplete="current-password" />
                 <span asp-validation-for="Password" class="field-error"></span>
-                <label class="portal-check"><input asp-for="RememberMe" /> Ghi nhớ đăng nhập trên thiết bị này</label>
+                <p class="account-session-note">Bạn sẽ tiếp tục đăng nhập trên thiết bị này cho đến khi đăng xuất.</p>
                 <button class="portal-submit" type="submit">ĐĂNG NHẬP <span>→</span></button>
             </form>
             <a class="password-recovery-link" asp-action="ForgotPassword">Quên mật khẩu?</a>

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models;
@@ -5,8 +6,9 @@ using WebApplication1.Models;
 namespace WebApplication1.Data;
 
 public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-    : IdentityDbContext<ApplicationUser>(options)
+    : IdentityDbContext<ApplicationUser>(options), IDataProtectionKeyContext
 {
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<FashionVideo> FashionVideos => Set<FashionVideo>();
     public DbSet<CustomerOrder> Orders => Set<CustomerOrder>();

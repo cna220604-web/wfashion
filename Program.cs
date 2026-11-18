@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.Sqlite;
@@ -100,6 +102,9 @@ else
 }
 
 builder.Services.AddDbContext<ApplicationDbContext>(configureDatabase);
+builder.Services.AddDataProtection()
+    .SetApplicationName("WStudio")
+    .PersistKeysToDbContext<ApplicationDbContext>();
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.User.RequireUniqueEmail = true;
@@ -171,7 +176,7 @@ builder.Services.ConfigureApplicationCookie(options =>
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
     options.SlidingExpiration = true;
-    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.Events.OnRedirectToLogin = context =>
     {
         if (context.Request.Path.StartsWithSegments("/Orders") || context.Request.Path.StartsWithSegments("/api"))

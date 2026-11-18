@@ -55,6 +55,16 @@ services:
         value: gemini-3-flash-preview
       - key: Ai__ApiKey
         sync: false
+      - key: Ai__Providers__1__Name
+        value: Groq backup
+      - key: Ai__Providers__1__Type
+        value: Groq
+      - key: Ai__Providers__1__Model
+        value: openai/gpt-oss-20b
+      - key: Ai__Providers__1__Endpoint
+        value: https://api.groq.com/openai/v1/chat/completions
+      - key: Ai__Providers__1__ApiKey
+        sync: false
       - key: AdminBootstrap__Email
         sync: false
       - key: AdminBootstrap__Password

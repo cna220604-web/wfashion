@@ -65,7 +65,7 @@ public sealed class AccountController(
             return View(model);
         }
 
-        await signInManager.SignInAsync(user, isPersistent: false);
+        await signInManager.SignInAsync(user, isPersistent: true);
         return await RedirectToLocalAsync(returnUrl, user);
     }
 
@@ -100,7 +100,7 @@ public sealed class AccountController(
         }
 
         var result = await signInManager.PasswordSignInAsync(
-            model.Email.Trim(), model.Password, model.RememberMe, lockoutOnFailure: true);
+            model.Email.Trim(), model.Password, isPersistent: true, lockoutOnFailure: true);
         if (result.Succeeded)
         {
             var user = await userManager.FindByEmailAsync(model.Email.Trim());
@@ -151,7 +151,7 @@ public sealed class AccountController(
         }
 
         var signInResult = await signInManager.ExternalLoginSignInAsync(
-            info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+            info.LoginProvider, info.ProviderKey, isPersistent: true, bypassTwoFactor: true);
         if (signInResult.Succeeded)
         {
             var signedInUser = await userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
@@ -192,7 +192,7 @@ public sealed class AccountController(
                 return RedirectToAction(nameof(Login), new { returnUrl });
             }
 
-            await signInManager.SignInAsync(existingUser, isPersistent: false);
+            await signInManager.SignInAsync(existingUser, isPersistent: true);
             return await RedirectToLocalAsync(returnUrl, existingUser);
         }
 
@@ -234,7 +234,7 @@ public sealed class AccountController(
             return RedirectToAction(nameof(Login), new { returnUrl });
         }
 
-        await signInManager.SignInAsync(user, isPersistent: false);
+        await signInManager.SignInAsync(user, isPersistent: true);
         return await RedirectToLocalAsync(returnUrl, user);
     }
 
