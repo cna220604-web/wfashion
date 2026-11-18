@@ -531,6 +531,17 @@ public sealed class AdminController(
             return NotFound();
         }
 
+        if (isActive)
+        {
+            var productIsActive = await database.Products.AsNoTracking()
+                .AnyAsync(product => product.Slug == video.ProductSlug && product.IsActive, HttpContext.RequestAborted);
+            if (!productIsActive)
+            {
+                TempData["Error"] = "Không thể hiện video vì sản phẩm liên kết đang bị ẩn. Hãy bật lại sản phẩm trong mục Sản phẩm & tồn kho trước.";
+                return RedirectToAction(nameof(Index), new { tab = "videos" });
+            }
+        }
+
         video.IsActive = isActive;
         await database.SaveChangesAsync(HttpContext.RequestAborted);
         TempData["Notice"] = isActive ? "Video đã được hiển thị trên cửa hàng." : "Video đã được ẩn khỏi cửa hàng.";

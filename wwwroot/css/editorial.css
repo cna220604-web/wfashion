@@ -798,7 +798,26 @@ body.store-page {
   overflow: hidden;
   border-radius: 46% 46% 20px 20px;
   box-shadow: 18px 18px 0 rgb(119 60 61 / 10%), 0 28px 70px rgb(52 37 28 / 13%);
-  animation: atelier-arrive .9s .12s both;
+  animation: atelier-arrive .9s .12s both, hero-art-ambient 8s 1.2s ease-in-out infinite;
+  transition: transform .6s cubic-bezier(.2, .7, .2, 1);
+}
+
+.store-page-shop .hero-art:hover {
+  transform: translateY(-4px) scale(1.006);
+}
+
+@keyframes hero-art-ambient {
+  0%, 100% { box-shadow: 18px 18px 0 rgb(119 60 61 / 10%), 0 28px 70px rgb(52 37 28 / 13%); }
+  50% { box-shadow: 18px 18px 0 rgb(119 60 61 / 15%), 0 34px 82px rgb(52 37 28 / 19%); }
+}
+
+.store-page-shop .hero-art-note {
+  animation: hero-note-float 5s 1.4s ease-in-out infinite;
+}
+
+@keyframes hero-note-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 .store-page-shop .hero-art::before {
