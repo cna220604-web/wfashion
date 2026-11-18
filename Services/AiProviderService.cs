@@ -17,7 +17,7 @@ public sealed class AiProviderService(
     private const string GeminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/";
     private const string OpenAiEndpoint = "https://api.openai.com/v1/chat/completions";
 
-    public async Task<AiProviderCompletion?> GenerateAsync(
+    public async Task<AiProviderResult> GenerateAsync(
         string systemPrompt,
         IReadOnlyList<AiProviderMessage> messages,
         CancellationToken cancellationToken)
@@ -25,9 +25,11 @@ public sealed class AiProviderService(
         var providers = GetProviders();
         if (providers.Count == 0)
         {
-            return null;
+            logger.LogWarning("No AI provider is configured. Set Ai:ApiKey and Ai:Model or configure Ai:Providers.");
+            return new AiProviderResult(null, AiProviderFailure.NotConfigured);
         }
 
+        var failure = AiProviderFailure.InvalidConfiguration;
         foreach (var provider in providers)
         {
             if (!TryGetEndpoint(provider, out var endpoint))
@@ -46,34 +48,73 @@ public sealed class AiProviderService(
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    logger.LogWarning("AI provider {ProviderName} returned HTTP {StatusCode}; trying the next configured provider.",
-                        provider.Name, (int)response.StatusCode);
+                    var errorDetail = await ReadProviderErrorAsync(response, providerTimeout.Token);
+                    failure = response.StatusCode switch
+                    {
+                        System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden => AiProviderFailure.InvalidCredentials,
+                        System.Net.HttpStatusCode.NotFound => AiProviderFailure.InvalidModelOrEndpoint,
+                        System.Net.HttpStatusCode.TooManyRequests => AiProviderFailure.QuotaExceeded,
+                        System.Net.HttpStatusCode.BadRequest => AiProviderFailure.ProviderRejectedRequest,
+                        _ when (int)response.StatusCode >= 500 => AiProviderFailure.ProviderUnavailable,
+                        _ => AiProviderFailure.ProviderRejectedRequest
+                    };
+                    logger.LogWarning("AI provider {ProviderName} returned HTTP {StatusCode}: {ProviderError}; trying the next configured provider.",
+                        provider.Name, (int)response.StatusCode, errorDetail);
                     continue;
                 }
 
                 var content = await ReadCompletionAsync(provider.Type, response, providerTimeout.Token);
                 if (!string.IsNullOrWhiteSpace(content) && HasStructuredChatAnswer(content))
                 {
-                    return new AiProviderCompletion(content, provider.Name, provider.Model);
+                    return new AiProviderResult(new AiProviderCompletion(content, provider.Name, provider.Model), AiProviderFailure.None);
                 }
 
-                logger.LogWarning("AI provider {ProviderName} returned no usable structured answer; trying the next configured provider.", provider.Name);
+                failure = AiProviderFailure.InvalidResponse;
+                logger.LogWarning("AI provider {ProviderName} returned no usable structured answer for model {Model}; trying the next configured provider.", provider.Name, provider.Model);
             }
             catch (HttpRequestException exception)
             {
+                failure = AiProviderFailure.ProviderUnavailable;
                 logger.LogWarning(exception, "AI provider {ProviderName} could not be reached; trying the next configured provider.", provider.Name);
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
+                failure = AiProviderFailure.ProviderUnavailable;
                 logger.LogWarning("AI provider {ProviderName} timed out; trying the next configured provider.", provider.Name);
             }
             catch (JsonException exception)
             {
+                failure = AiProviderFailure.InvalidResponse;
                 logger.LogWarning(exception, "AI provider {ProviderName} returned an unreadable response; trying the next configured provider.", provider.Name);
             }
         }
 
-        return null;
+        return new AiProviderResult(null, failure);
+    }
+
+    private static async Task<string> ReadProviderErrorAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var document = await JsonDocument.ParseAsync(
+                await response.Content.ReadAsStreamAsync(cancellationToken),
+                cancellationToken: cancellationToken);
+            if (document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty("error", out var error)
+                && error.ValueKind == JsonValueKind.Object
+                && error.TryGetProperty("message", out var message)
+                && message.ValueKind == JsonValueKind.String)
+            {
+                var detail = message.GetString();
+                return string.IsNullOrWhiteSpace(detail) ? "No provider error details." : detail[..Math.Min(detail.Length, 500)];
+            }
+        }
+        catch (JsonException)
+        {
+            return "Provider returned a non-JSON error response.";
+        }
+
+        return "No provider error details.";
     }
 
     private List<AiProviderSettings> GetProviders()
@@ -249,5 +290,19 @@ public sealed class AiProviderService(
     private sealed record AiProviderSettings(string Name, string Type, string ApiKey, string Model, string? Endpoint);
 }
 
+public enum AiProviderFailure
+{
+    None,
+    NotConfigured,
+    InvalidConfiguration,
+    InvalidCredentials,
+    InvalidModelOrEndpoint,
+    ProviderRejectedRequest,
+    QuotaExceeded,
+    ProviderUnavailable,
+    InvalidResponse
+}
+
+public sealed record AiProviderResult(AiProviderCompletion? Completion, AiProviderFailure Failure);
 public sealed record AiProviderMessage(string Role, string Content);
 public sealed record AiProviderCompletion(string Content, string ProviderName, string Model);
