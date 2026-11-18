@@ -6197,3 +6197,143 @@ body.portal-layout {
   .store-page .detail-outfit-products .matching-product strong { font-size: 13px; }
   .store-page .detail-outfit-products .matching-product small { font-size: 11px; }
 }
+
+@media (min-width: 761px) {
+  .admin-portal,
+  .staff-portal {
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important;
+  }
+
+  .admin-portal .portal-main,
+  .staff-portal .portal-main {
+    display: block !important;
+    min-height: 0;
+    overflow: visible !important;
+  }
+
+  .admin-portal .admin-dashboard {
+    display: grid !important;
+    width: min(1480px, 100%);
+    height: auto !important;
+    min-height: calc(100vh - 146px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    align-items: start;
+    gap: 16px;
+    overflow: visible !important;
+    padding-top: 24px;
+    padding-bottom: 32px;
+  }
+
+  .admin-portal .admin-dashboard > .dashboard-heading,
+  .admin-portal .admin-dashboard > .dashboard-tabs,
+  .admin-portal .admin-dashboard > .portal-alert,
+  .admin-portal .admin-dashboard > .metric-grid,
+  .admin-portal .admin-dashboard > .panel-help,
+  .admin-portal .admin-dashboard > .admin-finance-forms {
+    grid-column: 1 / -1;
+  }
+
+  .admin-portal .admin-dashboard > .dashboard-heading { margin-bottom: 0; }
+  .admin-portal .admin-dashboard > .dashboard-tabs { margin: 0 0 2px; }
+  .admin-portal .admin-dashboard > .portal-panel,
+  .admin-portal .admin-dashboard > .admin-finance-forms > .portal-panel {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    height: auto !important;
+    min-height: 0;
+    flex: none !important;
+    flex-direction: column;
+    overflow: visible !important;
+    margin: 0;
+  }
+
+  .admin-portal .admin-dashboard > .admin-finance-forms {
+    display: contents;
+  }
+
+  .admin-portal .admin-dashboard .table-scroll {
+    width: 100%;
+    max-height: min(58vh, 560px) !important;
+    flex: 0 1 auto !important;
+    overflow: auto !important;
+  }
+
+  .admin-portal .admin-dashboard .fashion-video-admin-list,
+  .admin-portal .admin-dashboard .admin-user-group .table-scroll,
+  .admin-portal .admin-dashboard .staff-feedback-list {
+    max-height: min(58vh, 560px);
+    flex: 0 1 auto;
+    overflow: auto;
+  }
+
+  .staff-portal .dashboard-page {
+    display: block !important;
+    width: min(1480px, 100%);
+    height: auto !important;
+    min-height: calc(100vh - 146px);
+    overflow: visible !important;
+    padding-top: 28px;
+    padding-bottom: 36px;
+  }
+
+  .staff-portal .dashboard-page > .portal-panel {
+    display: flex;
+    height: auto !important;
+    min-height: 0;
+    overflow: visible !important;
+    margin: 16px 0;
+  }
+
+  .staff-portal .table-scroll {
+    max-height: min(62vh, 620px) !important;
+    flex: 0 1 auto !important;
+    overflow: auto !important;
+  }
+
+  .staff-portal .staff-feedback-list {
+    max-height: min(62vh, 620px);
+    overflow-y: auto;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1050px) {
+  .admin-portal .admin-dashboard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-portal .admin-dashboard > .dashboard-heading,
+  .admin-portal .admin-dashboard > .dashboard-tabs,
+  .admin-portal .admin-dashboard > .portal-alert,
+  .admin-portal .admin-dashboard > .metric-grid,
+  .admin-portal .admin-dashboard > .panel-help,
+  .admin-portal .admin-dashboard > .admin-finance-forms {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-portal .admin-dashboard {
+    display: block !important;
+    height: auto !important;
+    min-height: 0;
+    overflow: visible !important;
+  }
+
+  .admin-portal .admin-dashboard > .portal-panel,
+  .staff-portal .dashboard-page > .portal-panel {
+    height: auto !important;
+    min-height: 0;
+    overflow: visible !important;
+    margin: 14px 0;
+  }
+
+  .admin-portal .admin-dashboard .table-scroll,
+  .staff-portal .dashboard-page .table-scroll {
+    max-height: 58vh !important;
+    overflow: auto !important;
+  }
+}
