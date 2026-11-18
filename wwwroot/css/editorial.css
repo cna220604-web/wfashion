@@ -6518,3 +6518,82 @@ body.portal-layout {
     max-height: 88vh;
   }
 }
+
+@media (min-width: 761px) {
+  .admin-portal .admin-dashboard-expenses {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .admin-portal .admin-dashboard-expenses > .admin-finance-forms {
+    display: grid !important;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .admin-portal .admin-dashboard-expenses .admin-finance-forms > .portal-panel {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .admin-portal .admin-dashboard-expenses .admin-form-disclosure {
+    display: block;
+  }
+
+  .admin-portal .admin-dashboard-expenses .admin-form-disclosure > summary {
+    width: 100%;
+    min-height: 48px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  .admin-portal .admin-dashboard-expenses .admin-form-disclosure[open] {
+    padding: 18px;
+    border: 1px solid #e6e0d6;
+    border-radius: 14px;
+    background: #fffdfa;
+    box-shadow: 0 8px 24px rgb(25 22 20 / 8%);
+  }
+
+  .admin-portal .admin-dashboard-expenses .admin-finance-forms:has(.admin-form-disclosure[open]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-portal .admin-dashboard-expenses > .portal-panel {
+    grid-column: 1 / -1;
+  }
+
+  .admin-portal .admin-dashboard-expenses > .portal-panel .table-scroll {
+    max-height: min(68vh, 700px) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-portal .admin-dashboard-expenses .admin-finance-forms {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin: 12px 0;
+  }
+
+  .admin-portal .admin-dashboard-expenses .admin-finance-forms > .portal-panel {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .admin-portal .admin-dashboard-expenses .admin-form-disclosure > summary {
+    width: 100%;
+    min-height: 46px;
+    text-align: center;
+  }
+}

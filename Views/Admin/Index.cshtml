@@ -46,9 +46,7 @@
     else if (tab == "expenses")
     {
         <div class="admin-finance-forms">
-            <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">KHO · NHẬN HÀNG</span><h2>Nhập hàng</h2></div><span class="panel-count">Tối đa 200 dòng / phiếu</span></div>
-                <p class="panel-help">Chọn nhà cung cấp, rồi dán các cột từ Excel/Google Sheets hoặc thêm dòng. Có thể dùng mã hàng hoặc dán nhiều dòng trùng mã; tồn kho và lịch sử được cập nhật trong cùng một lần lưu.</p>
-                <details class="admin-form-disclosure"><summary class="mini-submit">MỞ FORM NHẬP HÀNG</summary>
+            <section class="portal-panel management-panel"><details class="admin-form-disclosure"><summary class="mini-submit">＋ NHẬP HÀNG</summary>
                 <form asp-action="RecordStockReceipt" method="post" class="product-admin-form finance-form stock-receipt-form" data-stock-receipt-form data-stock-receipt-saved="@(stockReceiptSaved ? "true" : "false")">
                     <label>Nhà cung cấp<select name="PartnerId" class="portal-select" required><option value="">Chọn đối tác</option>@foreach (var partner in Model.BusinessPartners.Where(partner => partner.IsActive)) { <option value="@partner.Id">@partner.Code · @partner.Name</option> }</select></label>
                     <label>Ngày nhập<input name="ReceivedOn" class="portal-input" type="date" value="@DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).ToString("yyyy-MM-dd")" required /></label>
@@ -80,11 +78,8 @@
                     <label class="wide-field">Ghi chú phiếu (không bắt buộc)<input name="Notes" class="portal-input" maxlength="500" /></label>
                     <button class="mini-submit" type="submit">LƯU PHIẾU & CỘNG TỒN KHO</button>
                 </form>
-                </details>
-            </section>
-            <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">TÀI CHÍNH · CHI PHÍ</span><h2>Ghi nhận chi phí vận hành</h2></div></div>
-                <p class="panel-help">Ghi các khoản như mặt bằng, điện nước, lương, marketing, đóng gói hoặc chi phí khác của shop.</p>
-                <details class="admin-form-disclosure"><summary class="mini-submit">MỞ FORM GHI CHI PHÍ</summary>
+            </details></section>
+            <section class="portal-panel management-panel"><details class="admin-form-disclosure"><summary class="mini-submit">＋ GHI CHI PHÍ</summary>
                 <form asp-action="RecordOperatingExpense" method="post" class="product-admin-form finance-form">
                     <label>Nhóm chi phí<select name="Category" class="portal-select" required><option value="">Chọn nhóm chi phí</option><option>Thuê mặt bằng</option><option>Điện, nước, internet</option><option>Lương nhân viên</option><option>Marketing</option><option>Đóng gói & vận chuyển</option><option>Phần mềm & công cụ</option><option>Thuế & phí</option><option>Sửa chữa</option><option>Khác</option></select></label>
                     <label>Số tiền (₫)<input name="Amount" class="portal-input" type="number" min="1" max="9999999999.99" step="0.01" required /></label>
@@ -94,8 +89,7 @@
                     <label class="wide-field">Ghi chú<input name="Notes" class="portal-input" maxlength="500" /></label>
                     <button class="mini-submit" type="submit">LƯU CHI PHÍ</button>
                 </form>
-                </details>
-            </section>
+            </details></section>
         </div>
         <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">SỔ KHO · 50 GẦN NHẤT</span><h2>Lịch sử nhập hàng</h2></div></div>
             @if (Model.RecentStockReceipts.Count == 0) { <p class="empty-orders">Chưa có lần nhập hàng nào được ghi nhận.</p> }
