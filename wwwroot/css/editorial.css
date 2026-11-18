@@ -5546,11 +5546,67 @@ body.portal-layout {
 }
 
 .fashion-video-main {
+  display: flex;
   min-height: 0;
-  padding: 18px 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding: 10px 0 18px;
 }
 
+.fashion-video-search {
+  display: grid;
+  width: min(680px, calc(100% - 32px));
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px 16px;
+  margin: 0 auto 10px;
+}
+
+.fashion-video-search > label {
+  grid-column: 1 / -1;
+  color: rgb(248 242 233 / 68%);
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+
+.fashion-video-search-control {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  border: 1px solid rgb(228 197 159 / 36%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 5%);
+}
+
+.fashion-video-search-control > span {
+  color: #e4c59f;
+  font-size: 20px;
+}
+
+.fashion-video-search-control input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  border: 0;
+  outline: 0;
+  color: #fffaf3;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+}
+
+.fashion-video-search-control input::placeholder { color: rgb(248 242 233 / 46%); }
+.fashion-video-search-control button { border: 0; color: #e4c59f; background: transparent; font-size: 22px; cursor: pointer; }
+.fashion-video-search > p { margin: 0; color: rgb(248 242 233 / 56%); font-size: 11px; white-space: nowrap; }
+.fashion-video-search-empty { margin: auto; padding: 24px; color: rgb(248 242 233 / 78%); text-align: center; }
+.fashion-video-card[hidden] { display: none !important; }
+
 .fashion-video-feed {
+  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
   grid-auto-rows: 100%;
   scroll-padding-block: 0;
 }
@@ -5746,8 +5802,18 @@ body.portal-layout {
   }
 
   .fashion-video-main {
-    padding: 0;
+    padding: 8px 0 0;
   }
+
+  .fashion-video-search {
+    width: calc(100% - 24px);
+    gap: 4px 10px;
+    margin-bottom: 6px;
+  }
+
+  .fashion-video-search > label { font-size: 9px; }
+  .fashion-video-search-control input { height: 36px; font-size: 12px; }
+  .fashion-video-search > p { font-size: 10px; }
 
   .fashion-video-card,
   .fashion-video-card.is-portrait {
@@ -5937,4 +6003,107 @@ body.portal-layout {
   .customer-wishlist-item > b {
     font-size: 12px;
   }
+}
+
+.store-page .store-nav a {
+  font-size: 14px;
+}
+
+.store-page #collection .product-name {
+  font-size: clamp(18px, 1.45vw, 22px) !important;
+}
+
+.store-page #collection .product-meta > span,
+.store-page #collection .product-rating,
+.store-page #collection .product-rating > span {
+  font-size: 14px;
+}
+
+.store-page #collection .product-price-row strong {
+  font-size: 17px;
+}
+
+.store-page #collection .add-product {
+  font-size: 12px !important;
+}
+
+@media (max-width: 760px) {
+  .store-page .store-nav a {
+    font-size: 13px;
+  }
+
+  .store-page #collection .product-name {
+    font-size: 17px !important;
+  }
+
+  .store-page #collection .product-meta > span,
+  .store-page #collection .product-rating,
+  .store-page #collection .product-rating > span {
+    font-size: 12px;
+  }
+
+  .store-page #collection .product-price-row strong {
+    font-size: 15px;
+  }
+
+  .store-page #collection .add-product {
+    font-size: 11px !important;
+  }
+}
+
+.store-page .detail-copy > .section-kicker { font-size: 12px; }
+.store-page .detail-copy h2 { font-size: clamp(32px, 3vw, 42px); }
+.store-page .detail-price { font-size: 19px; }
+.store-page .detail-rating { font-size: 15px; }
+.store-page .detail-description { font-size: 16px; line-height: 1.7; }
+.store-page .detail-color { font-size: 14px; }
+.store-page .size-label { font-size: 11px; }
+.store-page .size-option { min-width: 48px; min-height: 44px; font-size: 13px !important; }
+.store-page .detail-purchase-actions .solid-button { min-height: 52px; font-size: 13px; }
+.store-page .detail-outfit-suggestions { gap: 14px 18px; padding: 24px clamp(20px, 3vw, 38px) 30px; }
+.store-page .detail-outfit-heading > .section-kicker { font-size: 11px; }
+.store-page .detail-outfit-heading h3 { font-size: clamp(25px, 2.4vw, 32px); }
+.store-page .detail-outfit-heading p { font-size: 15px; line-height: 1.6; }
+.store-page .detail-outfit-colors > span { gap: 8px; padding: 7px 11px; font-size: 13px; }
+.store-page .detail-outfit-colors i { width: 18px; height: 18px; flex-basis: 18px; }
+.store-page .detail-outfit-group h4 { margin-bottom: 10px; font-size: 18px; }
+.store-page .detail-outfit-products { align-items: stretch; gap: 12px; padding: 2px 2px 10px; }
+.store-page .detail-outfit-products .matching-product {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 0 0 clamp(128px, 42%, 180px);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 14px;
+}
+.store-page .detail-outfit-products .matching-product img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  border-radius: 9px;
+  object-fit: cover;
+}
+.store-page .detail-outfit-products .matching-product > span:not(.matching-product-arrow) { display: grid; min-width: 0; gap: 5px; }
+.store-page .detail-outfit-products .matching-product strong { font-size: 14px; line-height: 1.35; white-space: normal; }
+.store-page .detail-outfit-products .matching-product small { font-size: 12px; line-height: 1.4; white-space: normal; }
+.store-page .detail-outfit-products .matching-product .matching-product-arrow { position: absolute; top: 14px; right: 14px; display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; color: #773c3d; background: rgb(255 253 249 / 92%); font-size: 18px; }
+.store-page .detail-outfit-products .matching-products-empty { font-size: 13px; }
+
+@media (max-width: 700px) {
+  .store-page .detail-copy > .section-kicker { font-size: 11px; }
+  .store-page .detail-copy h2 { font-size: 32px; }
+  .store-page .detail-price { font-size: 18px; }
+  .store-page .detail-description { font-size: 15px; }
+  .store-page .detail-color { font-size: 13px; }
+  .store-page .detail-outfit-suggestions { grid-template-columns: 1fr; gap: 16px; padding: 22px 16px 26px; }
+  .store-page .detail-outfit-heading { grid-column: 1; }
+  .store-page .detail-outfit-heading h3 { font-size: 25px; }
+  .store-page .detail-outfit-heading p { font-size: 14px; }
+  .store-page .detail-outfit-group h4 { font-size: 17px; }
+  .store-page .detail-outfit-products .matching-product { flex-basis: clamp(138px, 42vw, 180px); }
+  .store-page .detail-outfit-products .matching-product strong { font-size: 13px; }
+  .store-page .detail-outfit-products .matching-product small { font-size: 11px; }
 }

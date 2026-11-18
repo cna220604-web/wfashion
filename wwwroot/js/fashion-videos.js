@@ -1,5 +1,41 @@
 const fashionVideoFeed = document.querySelector('.fashion-video-feed');
 if (fashionVideoFeed) {
+    const searchForm = document.querySelector('[data-fashion-video-search-form]');
+    const searchInput = document.querySelector('[data-fashion-video-search-input]');
+    const searchClear = document.querySelector('[data-fashion-video-search-clear]');
+    const searchCount = document.querySelector('[data-fashion-video-search-count]');
+    const searchEmpty = document.querySelector('[data-fashion-video-search-empty]');
+    const videoCards = [...fashionVideoFeed.querySelectorAll('[data-fashion-video-card]')];
+    const normalizeSearch = value => value.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/gi, 'd')
+        .toLocaleLowerCase('vi');
+    const filterVideos = () => {
+        if (!searchInput || !searchCount || !searchEmpty) return;
+        const terms = normalizeSearch(searchInput.value.trim()).split(/\s+/).filter(Boolean);
+        let visibleCount = 0;
+        videoCards.forEach(card => {
+            const searchableText = normalizeSearch(card.dataset.search || '');
+            const matches = terms.every(term => searchableText.includes(term));
+            card.hidden = !matches;
+            if (matches) visibleCount++;
+            if (!matches) card.querySelector('.fashion-video-player')?.pause();
+        });
+        searchCount.textContent = `${visibleCount} / ${videoCards.length} video`;
+        searchEmpty.hidden = visibleCount > 0;
+        if (searchClear) searchClear.hidden = !searchInput.value;
+    };
+    searchForm?.addEventListener('submit', event => {
+        event.preventDefault();
+        filterVideos();
+    });
+    searchInput?.addEventListener('input', filterVideos);
+    searchClear?.addEventListener('click', () => {
+        if (!searchInput) return;
+        searchInput.value = '';
+        filterVideos();
+        searchInput.focus();
+    });
     const soundPreferences = new WeakMap();
     const videoReturnStorageKey = 'studio.fashion-video-return';
     const updateSoundButton = video => {

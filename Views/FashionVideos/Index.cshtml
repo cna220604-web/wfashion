@@ -1,7 +1,7 @@
 @model IReadOnlyList<StorefrontFashionVideo>
 @{
     Layout = null;
-    ViewData["Title"] = "Video fashion";
+    ViewData["Title"] = "W-video";
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -19,20 +19,26 @@
     <header class="fashion-video-header">
         <a class="fashion-video-back" asp-controller="Home" asp-action="Index" aria-label="Quay lại cửa hàng">← <span>Cửa hàng</span></a>
         <a class="fashion-video-brand" asp-controller="Home" asp-action="Index">W <span>STUDIO</span></a>
-        <span class="fashion-video-header-label">VIDEO FASHION</span>
+        <span class="fashion-video-header-label">W-VIDEO</span>
     </header>
     <main class="fashion-video-main">
         @if (Model.Count == 0)
         {
-            <section class="fashion-video-empty"><span>W STUDIO · VIDEO FASHION</span><h1>Video mới sắp lên sóng.</h1><p>Hiện chưa có video sản phẩm nào được đăng.</p><a asp-controller="Home" asp-action="Index">Khám phá cửa hàng ↗</a></section>
+            <section class="fashion-video-empty"><span>W STUDIO · W-VIDEO</span><h1>Video mới sắp lên sóng.</h1><p>Hiện chưa có video sản phẩm nào được đăng.</p><a asp-controller="Home" asp-action="Index">Khám phá cửa hàng ↗</a></section>
         }
         else
         {
+            <form class="fashion-video-search" role="search" data-fashion-video-search-form>
+                <label for="fashion-video-search-input">Tìm video theo sản phẩm hoặc từ khóa</label>
+                <div class="fashion-video-search-control"><span aria-hidden="true">⌕</span><input id="fashion-video-search-input" type="search" data-fashion-video-search-input placeholder="Nhập tên sản phẩm hoặc chú thích..." autocomplete="off" /><button type="button" data-fashion-video-search-clear aria-label="Xóa nội dung tìm kiếm" hidden>×</button></div>
+                <p data-fashion-video-search-count aria-live="polite">@Model.Count video</p>
+            </form>
+            <p class="fashion-video-search-empty" data-fashion-video-search-empty role="status" hidden>Không tìm thấy video phù hợp. Hãy thử từ khóa hoặc tên sản phẩm khác.</p>
             <div class="fashion-video-feed" aria-label="Video thời trang">
                 @for (var index = 0; index < Model.Count; index++)
                 {
                     var video = Model[index];
-                    <article class="fashion-video-card">
+                    <article class="fashion-video-card" data-fashion-video-card data-search="@($"{video.ProductName} {video.Caption}")">
                         <div class="fashion-video-stage">
                             <video class="fashion-video-player" controls loop playsinline preload="metadata" aria-label="Video @video.Caption">
                                 <source src="@Url.Content($"~/videos/fashion/{video.VideoFileName}")" type="@(video.VideoFileName.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) ? "video/webm" : "video/mp4")" />
