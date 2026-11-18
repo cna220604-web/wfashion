@@ -42,9 +42,6 @@ public sealed class AdminController(
         tab = tab is "products" or "videos" or "expenses" or "partners" or "users" or "orders" or "promotions" ? tab : "overview";
         var isOverview = tab == "overview";
         var needsProducts = tab is "products" or "videos" or "expenses";
-        ViewData["VideoStorageWarning"] = tab == "videos" && environment.IsProduction()
-            && !objectStorage.IsConfigured
-            && !configuration.GetValue<bool>("Storage:AllowLocalVideoStorage");
         ViewData["StockReceiptSaved"] = (TempData["StockReceiptSaved"] as string) == "true";
 
         IReadOnlyList<AdminUserRow> adminUsers = [];
@@ -476,12 +473,6 @@ public sealed class AdminController(
     [RequestFormLimits(MultipartBodyLengthLimit = MaxFashionVideoRequestSize)]
     public async Task<IActionResult> UploadFashionVideo(FashionVideoUploadViewModel model)
     {
-        if (environment.IsProduction() && !objectStorage.IsConfigured && !configuration.GetValue<bool>("Storage:AllowLocalVideoStorage"))
-        {
-            TempData["Error"] = "Chưa thể tải video lên: môi trường production chưa có lưu trữ bền vững. Hãy cấu hình Storage:S3 hoặc bật Storage:AllowLocalVideoStorage chỉ khi đã gắn ổ đĩa persistent.";
-            return RedirectToAction(nameof(Index), new { tab = "videos" });
-        }
-
         if (!ModelState.IsValid || model.VideoFile is not { Length: > 0 } videoFile)
         {
             TempData["Error"] = "Chọn video, sản phẩm và nhập chú thích hợp lệ trước khi tải lên.";

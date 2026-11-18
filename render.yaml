@@ -27,6 +27,18 @@ services:
         sync: false
       - key: Storage__S3__SecretKey
         sync: false
+      - key: Storage__Avatars__S3__Endpoint
+        sync: false
+      - key: Storage__Avatars__S3__Bucket
+        sync: false
+      - key: Storage__Avatars__S3__AccessKey
+        sync: false
+      - key: Storage__Avatars__S3__SecretKey
+        sync: false
+      - key: Storage__Avatars__S3__Region
+        sync: false
+      - key: Storage__Avatars__S3__PublicBaseUrl
+        sync: false
       - key: Authentication__Google__ClientId
         sync: false
       - key: Authentication__Google__ClientSecret

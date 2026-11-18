@@ -1,4 +1,5 @@
 @model AdminDashboardViewModel
+@inject WebApplication1.Services.AvatarObjectStorage AvatarStorage
 @{
     ViewData["Title"] = "Quản trị hệ thống";
     var requestedTab = Context.Request.Query["tab"].ToString();
@@ -178,7 +179,7 @@
                                     <td><details class="admin-customer-details"><summary class="text-action">Xem chi tiết</summary><div class="admin-customer-profile">
                                         @if (!string.IsNullOrWhiteSpace(user.AvatarImageId))
                                         {
-                                            <img class="admin-customer-avatar" src="~/images/@user.AvatarImageId" alt="Ảnh đại diện của @user.DisplayName" />
+                                            <img class="admin-customer-avatar" src="@AvatarStorage.GetDisplayUrl(user.AvatarImageId)" alt="Ảnh đại diện của @user.DisplayName" />
                                         }
                                         else
                                         {
@@ -215,11 +216,7 @@
     else if (tab == "videos")
     {
         <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">VIDEO FASHION · ĐĂNG VIDEO</span><h2>Thêm video outfit</h2></div><span class="panel-count">MP4 / WebM · tối đa 100 MB</span></div>
-            <p class="panel-help">Mỗi video phải gắn với một sản phẩm đang bán. Khách xem trong trang Video fashion riêng và có thể mở sản phẩm để mua. Video hiện được lưu trên ổ đĩa local của dịch vụ; trên Render Free, tệp có thể mất khi khởi động lại hoặc deploy lại.</p>
-            @if (ViewData["VideoStorageWarning"] is true)
-            {
-                <p class="portal-alert danger" role="alert">Tải video lên đang bị khóa vì chưa bật lưu local và chưa cấu hình kho lưu trữ bền vững.</p>
-            }
+            <p class="panel-help">Mỗi video phải gắn với một sản phẩm đang bán. Có thể tải video trực tiếp từ máy lên và đăng ngay lên trang Video fashion.</p>
             <form asp-action="UploadFashionVideo" method="post" enctype="multipart/form-data" class="product-admin-form fashion-video-upload-form">
                 <label>Sản phẩm<select name="ProductSlug" class="portal-select" required><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products.Where(product => product.IsActive)) { <option value="@product.Slug">@product.Name · @product.Price.ToString("N0")₫</option> }</select></label>
                 <label class="wide-field">Chú thích video<input name="Caption" class="portal-input" maxlength="180" placeholder="Ví dụ: Outfit linen cho ngày nắng" required /></label>

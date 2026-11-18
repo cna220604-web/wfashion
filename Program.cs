@@ -35,6 +35,7 @@ builder.Services.AddHttpClient("fashion-news", client =>
 });
 builder.Services.AddSingleton<SupportChatPresence>();
 builder.Services.AddSingleton<ObjectMediaStorage>();
+builder.Services.AddSingleton<AvatarObjectStorage>();
 builder.Services.AddSingleton<FashionMagazineService>();
 builder.Services.AddHostedService(services => services.GetRequiredService<FashionMagazineService>());
 builder.Services.AddScoped<OrderNotificationService>();

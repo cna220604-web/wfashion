@@ -1,4 +1,5 @@
 @model CustomerDashboardViewModel
+@inject WebApplication1.Services.AvatarObjectStorage AvatarStorage
 @{
     ViewData["Title"] = "Tài khoản của tôi";
     var profileEditMode = ViewData["ProfileEditMode"] as bool? == true;
@@ -20,7 +21,7 @@
                         <button class="profile-avatar-button" type="button" data-avatar-trigger aria-label="Chọn ảnh đại diện">
                         @if (!string.IsNullOrWhiteSpace(Model.Profile.AvatarImageId))
                         {
-                            <img class="profile-avatar" data-avatar-preview src="~/images/@Model.Profile.AvatarImageId" alt="Ảnh đại diện của @Model.Profile.DisplayName" />
+                            <img class="profile-avatar" data-avatar-preview src="@AvatarStorage.GetDisplayUrl(Model.Profile.AvatarImageId)" alt="Ảnh đại diện của @Model.Profile.DisplayName" />
                         }
                         else
                         {

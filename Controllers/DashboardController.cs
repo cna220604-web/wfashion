@@ -1,9 +1,11 @@
+using Amazon.S3;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.Models;
+using WebApplication1.Services;
 
 namespace WebApplication1.Controllers;
 
@@ -13,7 +15,8 @@ public sealed class DashboardController(
     ApplicationDbContext database,
     IWebHostEnvironment environment,
     IConfiguration configuration,
-    ILogger<DashboardController> logger) : Controller
+    ILogger<DashboardController> logger,
+    AvatarObjectStorage avatarStorage) : Controller
 {
     private string AvatarDirectory => Path.Combine(
         configuration["Storage:PersistentPath"] ?? environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot"),
@@ -144,7 +147,7 @@ public sealed class DashboardController(
         {
             if (uploadedAvatarId is not null)
             {
-                DeleteAvatar(uploadedAvatarId);
+                await DeleteAvatarAsync(uploadedAvatarId, CancellationToken.None);
             }
 
             foreach (var error in result.Errors)
@@ -156,7 +159,7 @@ public sealed class DashboardController(
 
         if (uploadedAvatarId is not null && previousAvatarId is not null)
         {
-            DeleteAvatar(previousAvatarId);
+            await DeleteAvatarAsync(previousAvatarId, HttpContext.RequestAborted);
         }
 
         TempData["Notice"] = "Hồ sơ cá nhân đã được cập nhật.";
@@ -201,6 +204,19 @@ public sealed class DashboardController(
     private async Task<string> SaveAvatarAsync(IFormFile file, string extension, CancellationToken cancellationToken)
     {
         var fileName = $"{Guid.NewGuid():N}{extension}";
+        if (avatarStorage.IsConfigured)
+        {
+            await using var uploadStream = file.OpenReadStream();
+            var contentType = extension switch
+            {
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".gif" => "image/gif",
+                _ => "image/jpeg"
+            };
+            return await avatarStorage.UploadAsync(fileName, uploadStream, file.Length, contentType, cancellationToken);
+        }
+
         var avatarDirectory = AvatarDirectory;
         Directory.CreateDirectory(avatarDirectory);
         var destination = Path.Combine(avatarDirectory, fileName);
@@ -212,12 +228,35 @@ public sealed class DashboardController(
         }
         catch
         {
-            DeleteAvatar($"avatars/{fileName}");
+            DeleteLocalAvatar($"avatars/{fileName}");
             throw;
         }
     }
 
-    private void DeleteAvatar(string? avatarImageId)
+    private async Task DeleteAvatarAsync(string? avatarImageId, CancellationToken cancellationToken)
+    {
+        if (avatarStorage.IsSupabaseAvatar(avatarImageId))
+        {
+            if (!avatarStorage.IsConfigured || avatarImageId is null)
+            {
+                return;
+            }
+
+            try
+            {
+                await avatarStorage.DeleteAsync(avatarImageId, cancellationToken);
+            }
+            catch (AmazonS3Exception exception)
+            {
+                logger.LogWarning(exception, "Unable to remove replaced customer avatar {AvatarImageId}", avatarImageId);
+            }
+            return;
+        }
+
+        DeleteLocalAvatar(avatarImageId);
+    }
+
+    private void DeleteLocalAvatar(string? avatarImageId)
     {
         const string prefix = "avatars/";
         if (string.IsNullOrWhiteSpace(avatarImageId) || !avatarImageId.StartsWith(prefix, StringComparison.Ordinal))
