@@ -48,9 +48,6 @@ public sealed class AdminController(
         ViewData["VideoStorageWarning"] = tab == "videos" && environment.IsProduction()
             && !objectStorage.IsConfigured
             && !configuration.GetValue<bool>("Storage:AllowLocalVideoStorage");
-        ViewData["LocalVideoStorageEnabled"] = tab == "videos" && environment.IsProduction()
-            && !objectStorage.IsConfigured
-            && configuration.GetValue<bool>("Storage:AllowLocalVideoStorage");
 
         var userRows = new List<AdminUserRow>();
         var customerCount = 0;
@@ -191,7 +188,7 @@ public sealed class AdminController(
                 ProductName = products[productSlug].Name,
                 Quantity = item.Quantity,
                 UnitCost = item.UnitCost,
-                Supplier = partner.Name,
+                Supplier = $"{partner.Code} · {partner.Name}",
                 Reference = reference,
                 ReceivedOn = model.ReceivedOn,
                 Notes = model.Notes.Trim(),
@@ -209,14 +206,22 @@ public sealed class AdminController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateBusinessPartner(BusinessPartnerCreateViewModel model)
     {
+        var code = model.Code?.Trim() ?? string.Empty;
         var name = model.Name?.Trim() ?? string.Empty;
-        if (!ModelState.IsValid || name.Length < 2)
+        var normalizedCode = code.ToUpperInvariant();
+        var normalizedName = name.ToUpperInvariant();
+        if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Tên đối tác phải có từ 2 đến 120 ký tự.";
+            TempData["Error"] = "Thông tin đối tác chưa hợp lệ. Kiểm tra mã, tên, địa chỉ, số điện thoại và email.";
             return RedirectToAction(nameof(Index), new { tab = "partners" });
         }
 
-        var normalizedName = name.ToUpperInvariant();
+        if (await database.BusinessPartners.AnyAsync(partner => partner.NormalizedCode == normalizedCode, HttpContext.RequestAborted))
+        {
+            TempData["Error"] = "Mã đối tác này đã được sử dụng.";
+            return RedirectToAction(nameof(Index), new { tab = "partners" });
+        }
+
         if (await database.BusinessPartners.AnyAsync(partner => partner.NormalizedName == normalizedName, HttpContext.RequestAborted))
         {
             TempData["Error"] = "Tên đối tác này đã tồn tại.";
@@ -225,13 +230,59 @@ public sealed class AdminController(
 
         database.BusinessPartners.Add(new BusinessPartner
         {
+            Code = code,
+            NormalizedCode = normalizedCode,
             Name = name,
             NormalizedName = normalizedName,
+            Address = model.Address.Trim(),
             ContactName = model.ContactName?.Trim() ?? string.Empty,
-            Phone = model.Phone?.Trim() ?? string.Empty
+            Phone = model.Phone.Trim(),
+            Email = model.Email?.Trim() ?? string.Empty
         });
         await database.SaveChangesAsync(HttpContext.RequestAborted);
-        TempData["Notice"] = $"Đã thêm đối tác {name}. Đối tác đang hoạt động đã có trong lựa chọn nhà cung cấp.";
+        TempData["Notice"] = $"Đã thêm đối tác {code} · {name}. Đối tác đang hoạt động đã có trong lựa chọn nhà cung cấp.";
+        return RedirectToAction(nameof(Index), new { tab = "partners" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateBusinessPartner(BusinessPartnerCreateViewModel model)
+    {
+        var partner = await database.BusinessPartners.SingleOrDefaultAsync(item => item.Id == model.Id, HttpContext.RequestAborted);
+        if (partner is null) return NotFound();
+
+        var code = model.Code?.Trim() ?? string.Empty;
+        var name = model.Name?.Trim() ?? string.Empty;
+        var normalizedCode = code.ToUpperInvariant();
+        var normalizedName = name.ToUpperInvariant();
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Thông tin đối tác chưa hợp lệ. Kiểm tra mã, tên, địa chỉ, số điện thoại và email.";
+            return RedirectToAction(nameof(Index), new { tab = "partners" });
+        }
+
+        if (await database.BusinessPartners.AnyAsync(item => item.Id != model.Id && item.NormalizedCode == normalizedCode, HttpContext.RequestAborted))
+        {
+            TempData["Error"] = "Mã đối tác này đã được sử dụng.";
+            return RedirectToAction(nameof(Index), new { tab = "partners" });
+        }
+
+        if (await database.BusinessPartners.AnyAsync(item => item.Id != model.Id && item.NormalizedName == normalizedName, HttpContext.RequestAborted))
+        {
+            TempData["Error"] = "Tên đối tác này đã tồn tại.";
+            return RedirectToAction(nameof(Index), new { tab = "partners" });
+        }
+
+        partner.Code = code;
+        partner.NormalizedCode = normalizedCode;
+        partner.Name = name;
+        partner.NormalizedName = normalizedName;
+        partner.Address = model.Address.Trim();
+        partner.ContactName = model.ContactName?.Trim() ?? string.Empty;
+        partner.Phone = model.Phone.Trim();
+        partner.Email = model.Email?.Trim() ?? string.Empty;
+        await database.SaveChangesAsync(HttpContext.RequestAborted);
+        TempData["Notice"] = $"Đã cập nhật đối tác {code} · {name}.";
         return RedirectToAction(nameof(Index), new { tab = "partners" });
     }
 

@@ -19,7 +19,7 @@ public sealed class StockReceipt
     [Range(typeof(decimal), "1", "9999999999.99")]
     public decimal UnitCost { get; set; }
 
-    [StringLength(120)]
+    [StringLength(160)]
     public string Supplier { get; set; } = string.Empty;
 
     [StringLength(80)]

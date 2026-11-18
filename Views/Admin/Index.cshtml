@@ -67,7 +67,7 @@
                     <button class="mini-submit" type="button" data-stock-add-row>THÊM DÒNG SẢN PHẨM</button>
                     <div class="stock-receipt-summary">Tổng giá trị phiếu: <strong data-stock-total>0 ₫</strong></div>
                     <label>Ngày nhập<input name="ReceivedOn" class="portal-input" type="date" value="@DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).ToString("yyyy-MM-dd")" required /></label>
-                    <label>Nhà cung cấp<select name="PartnerId" class="portal-select" required><option value="">Chọn đối tác</option>@foreach (var partner in Model.BusinessPartners.Where(partner => partner.IsActive)) { <option value="@partner.Id">@partner.Name</option> }</select></label>
+                    <label>Nhà cung cấp<select name="PartnerId" class="portal-select" required><option value="">Chọn đối tác</option>@foreach (var partner in Model.BusinessPartners.Where(partner => partner.IsActive)) { <option value="@partner.Id">@partner.Code · @partner.Name</option> }</select></label>
                     <label>Mã phiếu tự động<input class="portal-input" value="PN-@Model.NextStockReceiptNumber.ToString("D6")" readonly aria-label="Mã phiếu nhập dự kiến" /><small>Mã chính thức được cấp khi lưu phiếu.</small></label>
                     <label class="wide-field">Ghi chú<input name="Notes" class="portal-input" maxlength="500" /></label>
                     <button class="mini-submit" type="submit">LƯU PHIẾU & CỘNG TỒN KHO</button>
@@ -104,16 +104,19 @@
         <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">ĐỐI TÁC · NHÀ CUNG CẤP</span><h2>Thêm đối tác</h2></div><span class="panel-count">@Model.BusinessPartners.Count đối tác</span></div>
             <p class="panel-help">Đối tác đang hoạt động sẽ xuất hiện trong lựa chọn nhà cung cấp khi nhập kho. Ngừng sử dụng chỉ ẩn đối tác khỏi lựa chọn mới; lịch sử nhập hàng vẫn được giữ nguyên.</p>
             <form asp-action="CreateBusinessPartner" method="post" class="product-admin-form">
+                <label>Mã đối tác<input name="Code" class="portal-input" minlength="2" maxlength="30" pattern="[A-Za-z0-9-]{2,30}" placeholder="NCC-001" required /></label>
                 <label>Tên đối tác<input name="Name" class="portal-input" minlength="2" maxlength="120" required /></label>
+                <label>Địa chỉ<input name="Address" class="portal-input" minlength="5" maxlength="240" autocomplete="street-address" required /></label>
+                <label>Số điện thoại<input name="Phone" class="portal-input" type="tel" maxlength="30" autocomplete="tel" required /></label>
+                <label>Email (không bắt buộc)<input name="Email" class="portal-input" type="email" maxlength="256" autocomplete="email" /></label>
                 <label>Người liên hệ<input name="ContactName" class="portal-input" maxlength="100" /></label>
-                <label>Số điện thoại<input name="Phone" class="portal-input" type="tel" maxlength="30" /></label>
                 <button class="mini-submit" type="submit">THÊM ĐỐI TÁC</button>
             </form>
         </section>
         <section class="portal-panel management-panel"><div class="panel-heading"><div><span class="portal-kicker">DANH BẠ ĐỐI TÁC</span><h2>Đối tác đã lưu</h2></div></div>
             @if (Model.BusinessPartners.Count == 0) { <p class="empty-orders">Chưa có đối tác nào. Thêm đối tác để sử dụng làm nhà cung cấp.</p> }
-            else { <div class="table-scroll"><table class="management-table"><thead><tr><th>Tên đối tác</th><th>Người liên hệ</th><th>Điện thoại</th><th>Trạng thái</th><th></th></tr></thead><tbody>
-            @foreach (var partner in Model.BusinessPartners) { <tr><td>@partner.Name</td><td>@partner.ContactName</td><td>@partner.Phone</td><td>@(partner.IsActive ? "Đang hoạt động" : "Ngừng sử dụng")</td><td><form asp-action="SetBusinessPartnerStatus" method="post" class="inline-action-form"><input type="hidden" name="id" value="@partner.Id" /><input type="hidden" name="isActive" value="@(!partner.IsActive)" /><button class="text-action" type="submit">@(partner.IsActive ? "Ngừng dùng" : "Bật lại")</button></form></td></tr> }
+            else { <div class="table-scroll"><table class="management-table"><thead><tr><th>Mã / tên đối tác</th><th>Địa chỉ</th><th>Người liên hệ</th><th>Điện thoại</th><th>Email</th><th>Trạng thái / thao tác</th></tr></thead><tbody>
+            @foreach (var partner in Model.BusinessPartners) { <tr><td><strong>@partner.Code</strong><small>@partner.Name</small></td><td>@partner.Address</td><td>@partner.ContactName</td><td>@partner.Phone</td><td>@partner.Email</td><td><details><summary>Chỉnh sửa</summary><form asp-action="UpdateBusinessPartner" method="post" class="product-admin-form"><input type="hidden" name="Id" value="@partner.Id" /><label>Mã<input name="Code" class="portal-input" value="@partner.Code" minlength="2" maxlength="30" pattern="[A-Za-z0-9-]{2,30}" required /></label><label>Tên<input name="Name" class="portal-input" value="@partner.Name" minlength="2" maxlength="120" required /></label><label>Địa chỉ<input name="Address" class="portal-input" value="@partner.Address" minlength="5" maxlength="240" required /></label><label>Điện thoại<input name="Phone" class="portal-input" value="@partner.Phone" type="tel" maxlength="30" required /></label><label>Email<input name="Email" class="portal-input" value="@partner.Email" type="email" maxlength="256" /></label><label>Người liên hệ<input name="ContactName" class="portal-input" value="@partner.ContactName" maxlength="100" /></label><button class="mini-submit" type="submit">LƯU THAY ĐỔI</button></form></details><form asp-action="SetBusinessPartnerStatus" method="post" class="inline-action-form"><input type="hidden" name="id" value="@partner.Id" /><input type="hidden" name="isActive" value="@(!partner.IsActive)" /><button class="text-action" type="submit">@(partner.IsActive ? "Ngừng dùng" : "Bật lại")</button></form><small>@(partner.IsActive ? "Đang hoạt động" : "Ngừng sử dụng")</small></td></tr> }
             </tbody></table></div> }
         </section>
     }
@@ -161,10 +164,6 @@
             @if (ViewData["VideoStorageWarning"] is true)
             {
                 <p class="portal-alert danger" role="alert">Tải video lên đang bị khóa vì chưa bật lưu local và chưa cấu hình kho lưu trữ bền vững.</p>
-            }
-            else if (ViewData["LocalVideoStorageEnabled"] is true)
-            {
-                <p class="portal-alert" role="status">Lưu video local đang bật theo yêu cầu. Video có thể mất khi dịch vụ khởi động lại hoặc deploy lại.</p>
             }
             <form asp-action="UploadFashionVideo" method="post" enctype="multipart/form-data" class="product-admin-form fashion-video-upload-form">
                 <label>Sản phẩm<select name="ProductSlug" class="portal-select" required><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products.Where(product => product.IsActive)) { <option value="@product.Slug">@product.Name · @product.Price.ToString("N0")₫</option> }</select></label>

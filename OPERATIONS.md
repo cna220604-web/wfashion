@@ -40,7 +40,7 @@
 
 ## Kiểm tra trước khi phát hành
 
-- Nhập kho theo lô nhận nhiều sản phẩm trong một giao dịch; mỗi dòng có số lượng và giá vốn riêng. Có thể dán ba cột `mã sản phẩm; số lượng; giá nhập` từ bảng tính, tối đa 200 sản phẩm mỗi phiếu. Tạo đối tác tại mục Đối tác trước khi ghi phiếu; mã phiếu `PN-xxxxxx` được cấp tự động và dùng chung cho mọi dòng trong cùng phiếu. Tab Nhập hàng có form tạo nhanh mặt hàng mới (tồn ban đầu 0).
+- Nhập kho theo lô nhận nhiều sản phẩm trong một giao dịch; mỗi dòng có số lượng và giá vốn riêng. Có thể dán ba cột `mã sản phẩm; số lượng; giá nhập` từ bảng tính, tối đa 200 sản phẩm mỗi phiếu. Tạo đối tác tại mục Đối tác trước khi ghi phiếu: nhập mã đối tác duy nhất, tên, địa chỉ, số điện thoại và email tùy chọn; có thể sửa thông tin hoặc ngừng sử dụng mà không mất lịch sử. Mã và tên đối tác được hiển thị trong lựa chọn nhà cung cấp và bản ghi nhập hàng. Mã phiếu `PN-xxxxxx` được cấp tự động và dùng chung cho mọi dòng trong cùng phiếu. Tab Nhập hàng có form tạo nhanh mặt hàng mới (tồn ban đầu 0).
 - Tab Sản phẩm cho phép dán tối đa 500 dòng theo thứ tự `mã; tên; danh mục; giá bán; màu; kích cỡ; tồn đầu; mô tả tùy chọn`, phân tách bằng tab hoặc dấu chấm phẩy. Sản phẩm nạp hàng loạt dùng ảnh mẫu theo danh mục; tồn đầu được ghi trực tiếp, không tạo phiếu nhập tài chính.
 - Xác nhận tài khoản admin/nhân viên/khách hàng đúng vai trò; các action thay đổi dữ liệu phải tiếp tục có `[Authorize]` theo vai trò và antiforgery.
 - Chạy build và kiểm thử các luồng đăng nhập, đặt/hủy đơn, chuyển trạng thái, tồn kho, upload ảnh, email (SMTP sandbox), và chat/fallback AI.
