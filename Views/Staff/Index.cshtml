@@ -4,7 +4,7 @@
     var requestedTab = Context.Request.Query["tab"].ToString();
     var tab = requestedTab is "support" or "orders" or "stock" or "feedback" ? requestedTab : "overview";
 }
-<section class="dashboard-page staff-dashboard">
+<section class="dashboard-page staff-dashboard staff-dashboard-@tab">
     <div class="dashboard-heading"><div><span class="portal-kicker">WORKSPACE · NHÂN VIÊN</span><h1>Bàn làm việc</h1><p>Chọn riêng hộp thư, đơn hàng, tồn kho hoặc phản hồi khách hàng.</p></div><span class="role-badge">NHÂN VIÊN</span></div>
     @if (TempData["Notice"] is string notice) { <div class="portal-alert success">@notice</div> }
     @if (TempData["Error"] is string error) { <div class="portal-alert danger">@error</div> }
