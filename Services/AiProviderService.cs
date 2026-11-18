@@ -64,9 +64,10 @@ public sealed class AiProviderService(
                 }
 
                 var content = await ReadCompletionAsync(provider.Type, response, providerTimeout.Token);
-                if (!string.IsNullOrWhiteSpace(content) && HasStructuredChatAnswer(content))
+                var structuredContent = string.IsNullOrWhiteSpace(content) ? null : NormalizeStructuredChatAnswer(content);
+                if (structuredContent is not null)
                 {
-                    return new AiProviderResult(new AiProviderCompletion(content, provider.Name, provider.Model), AiProviderFailure.None);
+                    return new AiProviderResult(new AiProviderCompletion(structuredContent, provider.Name, provider.Model), AiProviderFailure.None);
                 }
 
                 failure = AiProviderFailure.InvalidResponse;
@@ -274,17 +275,49 @@ public sealed class AiProviderService(
         return null;
     }
 
-    private static bool HasStructuredChatAnswer(string content)
+    private static string? NormalizeStructuredChatAnswer(string content)
     {
-        using var document = JsonDocument.Parse(content);
-        var root = document.RootElement;
-        return root.ValueKind == JsonValueKind.Object &&
-            root.TryGetProperty("reply", out var reply) &&
-            reply.ValueKind == JsonValueKind.String &&
-            !string.IsNullOrWhiteSpace(reply.GetString()) &&
-            root.TryGetProperty("recommendedProductCodes", out var codes) &&
-            codes.ValueKind == JsonValueKind.Array &&
-            codes.EnumerateArray().All(code => code.ValueKind == JsonValueKind.String);
+        var objectStart = content.IndexOf('{');
+        var objectEnd = content.LastIndexOf('}');
+        if (objectStart < 0 || objectEnd <= objectStart)
+        {
+            return null;
+        }
+
+        var json = content[objectStart..(objectEnd + 1)];
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+            return root.ValueKind == JsonValueKind.Object &&
+                TryGetPropertyIgnoreCase(root, "reply", out var reply) &&
+                reply.ValueKind == JsonValueKind.String &&
+                !string.IsNullOrWhiteSpace(reply.GetString()) &&
+                TryGetPropertyIgnoreCase(root, "recommendedProductCodes", out var codes) &&
+                codes.ValueKind == JsonValueKind.Array &&
+                codes.EnumerateArray().All(code => code.ValueKind == JsonValueKind.String)
+                    ? json
+                    : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static bool TryGetPropertyIgnoreCase(JsonElement element, string propertyName, out JsonElement value)
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                value = property.Value;
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
     }
 
     private sealed record AiProviderSettings(string Name, string Type, string ApiKey, string Model, string? Endpoint);
