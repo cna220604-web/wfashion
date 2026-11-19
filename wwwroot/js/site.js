@@ -75,6 +75,45 @@ document.addEventListener('keydown', event => {
     document.querySelectorAll('.admin-form-disclosure[open]').forEach(disclosure => disclosure.removeAttribute('open'));
 });
 
+const adminCreateDialog = document.createElement('dialog');
+adminCreateDialog.className = 'admin-create-dialog';
+adminCreateDialog.innerHTML = '<div class="admin-create-dialog-header"><button type="button" class="admin-create-dialog-close" aria-label="Đóng">×</button></div><div class="admin-create-dialog-host"></div>';
+document.querySelector('.admin-portal')?.append(adminCreateDialog);
+
+const adminDialogHost = adminCreateDialog.querySelector('.admin-create-dialog-host');
+let adminDialogDisclosure = null;
+
+const closeAdminCreateDialog = () => {
+    if (!adminCreateDialog.open) return;
+    adminCreateDialog.close();
+};
+
+adminCreateDialog.querySelector('.admin-create-dialog-close')?.addEventListener('click', closeAdminCreateDialog);
+adminCreateDialog.addEventListener('click', event => {
+    if (event.target === adminCreateDialog) closeAdminCreateDialog();
+});
+adminCreateDialog.addEventListener('close', () => {
+    if (!adminDialogDisclosure || !adminDialogHost) return;
+    const form = adminDialogHost.querySelector('form');
+    if (form) adminDialogDisclosure.append(form);
+    adminDialogDisclosure.removeAttribute('open');
+    adminDialogDisclosure = null;
+});
+
+document.querySelectorAll('.admin-portal .admin-form-disclosure > summary').forEach(summary => {
+    summary.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        const disclosure = summary.closest('.admin-form-disclosure');
+        const form = disclosure?.querySelector(':scope > form');
+        if (!disclosure || !form || adminCreateDialog.open) return;
+        adminDialogDisclosure = disclosure;
+        adminDialogHost.append(form);
+        disclosure.removeAttribute('open');
+        adminCreateDialog.showModal();
+    });
+});
+
 document.querySelectorAll('[data-avatar-trigger]').forEach(button => {
     const fileInput = button.closest('.profile-avatar-row')?.querySelector('[data-avatar-input]');
     if (!fileInput) return;

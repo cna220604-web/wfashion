@@ -6768,88 +6768,70 @@ body.portal-layout {
   }
 }
 
-/* Admin create forms open as overlays and never resize or push the data lists. */
-.admin-portal .admin-form-disclosure[open] {
-  position: fixed;
-  z-index: 1400;
-  inset: 0;
-  display: grid;
-  width: 100vw;
-  height: 100dvh;
-  margin: 0 !important;
-  padding: clamp(12px, 3vw, 32px);
-  place-items: center;
-  overflow: hidden;
+/* Admin create forms use a native dialog so the form never participates in dashboard layout. */
+.admin-portal .admin-create-dialog {
+  width: min(980px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  padding: 0;
+  overflow: visible;
+  border: 1px solid #e6e0d6;
+  border-radius: 18px;
+  color: #332b25;
+  background: #fffdfa;
+  box-shadow: 0 22px 80px rgb(25 22 20 / 34%);
+}
+
+.admin-portal .admin-create-dialog::backdrop {
   background: rgb(25 22 20 / 58%);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
 
-.admin-portal .admin-form-disclosure[open] > summary {
-  position: fixed;
-  z-index: 1402;
-  top: clamp(12px, 2vw, 24px);
-  right: clamp(12px, 2vw, 24px);
-  width: 44px;
-  min-height: 44px;
-  margin: 0;
+.admin-portal .admin-create-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 48px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #eee8df;
+}
+
+.admin-portal .admin-create-dialog-close {
+  display: grid;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border: 1px solid rgb(255 255 255 / 42%);
+  border: 0;
   border-radius: 50%;
-  justify-content: center;
-  color: transparent;
-  background: #773c3d;
-  box-shadow: 0 8px 24px rgb(25 22 20 / 22%);
-  font-size: 0;
-}
-
-.admin-portal .admin-form-disclosure[open] > summary::before {
+  place-items: center;
   color: #fff;
-  content: "×";
-  font-size: 24px;
-  font-weight: 400;
-  line-height: 1;
+  background: #773c3d;
+  font-size: 22px;
+  cursor: pointer;
 }
 
-.admin-portal .admin-form-disclosure[open] > summary::after {
-  display: none;
-}
-
-.admin-portal .admin-form-disclosure[open] > form {
-  position: relative;
-  z-index: 1401;
-  width: min(860px, calc(100vw - 24px));
-  max-height: calc(100dvh - 32px);
-  margin: 0;
-  padding: clamp(16px, 3vw, 28px);
+.admin-portal .admin-create-dialog-host {
+  max-height: calc(100dvh - 72px);
   overflow-y: auto;
-  border: 1px solid #e6e0d6;
-  border-radius: 18px;
-  background: #fffdfa;
-  box-shadow: 0 22px 80px rgb(25 22 20 / 34%);
+  padding: clamp(16px, 3vw, 28px);
 }
 
-.admin-portal .admin-form-disclosure[open] > form.stock-receipt-form,
-.admin-portal .admin-form-disclosure[open] > form.promotion-admin-form,
-.admin-portal .admin-form-disclosure[open] > form.fashion-video-upload-form {
-  width: min(980px, calc(100vw - 24px));
+.admin-portal .admin-create-dialog-host > form {
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 @media (max-width: 760px) {
-  .admin-portal .admin-form-disclosure[open] {
-    align-items: end;
-    padding: 10px;
-  }
-
-  .admin-portal .admin-form-disclosure[open] > summary {
-    top: 10px;
-    right: 10px;
-  }
-
-  .admin-portal .admin-form-disclosure[open] > form {
-    width: 100%;
-    max-height: calc(100dvh - 20px);
-    padding: 16px;
+  .admin-portal .admin-create-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
     border-radius: 16px;
+  }
+
+  .admin-portal .admin-create-dialog-host {
+    max-height: calc(100dvh - 64px);
+    padding: 14px;
   }
 }
