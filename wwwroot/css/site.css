@@ -2101,6 +2101,31 @@ body {
 
 .stylist-shortcuts button:hover { border-color: #773c3d; background: #f5ebe1; }
 
+.human-chat-transfer {
+  display: flex;
+  justify-content: center;
+  padding: 0 12px 9px;
+}
+
+.human-chat-transfer[hidden],
+.human-chat-transfer button[hidden] { display: none; }
+
+.human-chat-transfer button {
+  min-height: 34px;
+  padding: 8px 12px;
+  border: 1px solid #773c3d;
+  border-radius: 999px;
+  color: #773c3d;
+  background: #fffaf3;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.human-chat-transfer button:hover { color: #fff; background: #773c3d; }
+.human-chat-transfer button:disabled { opacity: 0.55; cursor: wait; }
+
 .chat-form {
   display: flex;
   gap: 8px;

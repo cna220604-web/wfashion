@@ -1339,6 +1339,8 @@ document.getElementById('chat-form').addEventListener('submit', async event => {
 
 const supportToken = () => document.querySelector('#antiforgery-form input[name="__RequestVerificationToken"]').value;
 const supportStatus = document.getElementById('human-chat-status');
+const transferToHumanButton = document.getElementById('transfer-to-human-chat');
+if (isCustomer) transferToHumanButton.hidden = false;
 let supportConversationClosed = false;
 const isHumanSupportRequest = text => {
     const normalized = text.toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
@@ -1350,6 +1352,7 @@ const setHumanChatMode = conversation => {
     supportConversationId = conversation.id;
     supportConversationClosed = false;
     document.getElementById('stylist-shortcuts').hidden = true;
+    transferToHumanButton.hidden = true;
     supportStatus.hidden = false;
     supportStatus.textContent = conversation.assignedEmployeeName
         ? `Bạn đang trò chuyện với ${conversation.assignedEmployeeName}.`
@@ -1359,8 +1362,8 @@ const setHumanChatMode = conversation => {
     document.getElementById('chat-input').placeholder = 'Nhắn tin...';
     document.querySelector('.chat-disclaimer').textContent = 'Không chia sẻ mật khẩu hoặc thông tin thanh toán.';
 };
-const startSupportChat = async (request, form) => {
-    const submitButton = form.querySelector('button');
+const startSupportChat = async (request, trigger) => {
+    const submitButton = trigger.matches('button') ? trigger : trigger.querySelector('button');
     submitButton.disabled = true;
     supportStatus.hidden = false;
     supportStatus.textContent = 'Đang kết nối với nhân viên...';
@@ -1389,6 +1392,14 @@ const startSupportChat = async (request, form) => {
         document.getElementById('chat-input').focus();
     }
 };
+transferToHumanButton.addEventListener('click', async () => {
+    if (!isCustomer) {
+        redirectToLoginFromStore();
+        return;
+    }
+    if (supportConversationId) return;
+    await startSupportChat('Xin chào, tôi muốn nhân viên tư vấn thêm.', transferToHumanButton);
+});
 const sendSupportMessage = async (content, form) => {
     if (supportConversationClosed) return;
     const input = document.getElementById('chat-input');
