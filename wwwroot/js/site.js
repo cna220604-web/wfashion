@@ -65,6 +65,14 @@ document.querySelectorAll('[data-profile-form]').forEach(form => {
 document.addEventListener('click', event => {
     const closeButton = event.target.closest('[data-close-admin-edit]');
     if (closeButton) closeButton.closest('details')?.removeAttribute('open');
+
+    const disclosure = event.target.closest('.admin-form-disclosure');
+    if (disclosure?.open && event.target === disclosure) disclosure.removeAttribute('open');
+});
+
+document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    document.querySelectorAll('.admin-form-disclosure[open]').forEach(disclosure => disclosure.removeAttribute('open'));
 });
 
 document.querySelectorAll('[data-avatar-trigger]').forEach(button => {
